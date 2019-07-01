@@ -1,14 +1,14 @@
 var express = require('express');
 var router = express.Router();
 
-const upload = require('../../config/multer');
-const defaultRes = require('../../module/utils');
-const statusCode = require('../../module/statusCode');
-const resMessage = require('../../module/responseMessage');
-const encrypt = require('../../module/encrypt');
-const db = require('../../module/pool');
+const upload = require('../../../config/multer');
+const defaultRes = require('../../../module/utils/utils');
+const statusCode = require('../../../module/utils/statusCode');
+const resMessage = require('../../../module/utils/responseMessage');
+const encrypt = require('../../../module/utils/encrypt');
+const db = require('../../../module/utils/pool');
 const moment = require('moment');
-const authUtil = require('../../module/authUtils');
+const authUtil = require('../../../module/utils/authUtils');
 
 const FLAG_WEBTOON_POPULAR = 1;
 const FLAG_WEBTOON_NEW = 2;

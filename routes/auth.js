@@ -1,15 +1,14 @@
 var express = require('express');
 var router = express.Router();
 
-const upload = require('../../config/multer');
-const defaultRes = require('../../module/utils');
-const statusCode = require('../../module/statusCode');
-const resMessage = require('../../module/responseMessage');
-const encrypt = require('../../module/encrypt');
-const db = require('../../module/pool');
-const moment = require('../board/node_modules/moment');
-const authUtil = require('../../module/authUtils');
-const jwtUtil = require('../../module/jwt');
+const upload = require('../config/multer');
+const defaultRes = require('../module/utils/utils');
+const statusCode = require('../module/utils/statusCode');
+const resMessage = require('../module/utils/responseMessage');
+const encrypt = require('../module/utils/encrypt');
+const db = require('../module/utils/pool');
+const authUtil = require('../module/utils/authUtils');
+const jwtUtil = require('../module/utils/jwt');
 
 router.post('/signin', async (req, res) => {
     const {id, password} = req.body;
