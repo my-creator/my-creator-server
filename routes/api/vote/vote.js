@@ -11,6 +11,14 @@ const moment = require('moment');
 const authUtil = require('../../../module/utils/authUtils');
 const jwtUtil = require('../../../module/utils/jwt');
 
+const upload = require('../../../config/multer');
+const defaultRes = require('../../../module/utils/utils');
+const statusCode = require('../../../module/utils/statusCode');
+const resMessage = require('../../../module/utils/responseMessage');
+const db = require('../../../module/utils/pool');
+const authUtil = require('../../../module/utils/authUtils');
+
+
 // 에피소드 리스트 조회
 router.get('/webtoon/:webtoonIdx', async(req, res) => {
     const {webtoonIdx} = req.params;

@@ -24,7 +24,24 @@ router.get('/:idx', authUtil.isLoggedin, (req, res) => {
     if(!getMembershipResult){
         res.status(200).send(defaultRes.successFalse(statusCode.OK, resMessage.USERINFO_SELECT_SUCCESS,getUserInfoResult));
     }else{
-        res.status(200).send(defaultRes.successFalse(statusCode.OK, resMessage.USERINFO_SELECT_FAIL,getUserInfoResult));
+        res.status(200).send(defaultRes.successFalse(statusCode.OK, resMessage.USERINFO_SELECT_FAIL,getUserInfoResult));=======
+const upload = require('../../../config/multer');
+const defaultRes = require('../../../module/utils/utils');
+const statusCode = require('../../../module/utils/statusCode');
+const resMessage = require('../../../module/utils/responseMessage');
+const db = require('../../../module/utils/pool');
+const authUtil = require('../../../module/utils/authUtils');
+
+// 메인화면 베너 이미지 조회
+router.get('/', async(req, res) => {
+    const getBannersQuery = "SELECT * FROM banner";
+    const getBannersResult = await db.queryParam_None(getBannersQuery);
+
+    if (!getBannersResult) {
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BANNER_SELECT_ERROR));
+    } else {
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BANNER_SELECT_SUCCESS, getBannersResult));
+
     }
 
 });
