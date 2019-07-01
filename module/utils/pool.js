@@ -1,6 +1,11 @@
 //dbConfig 에서는 mysql 모듈이 아닌 promise-mysql 모듈을 사용합니다!
 //async/await 문법을 사용하기 위해서죠.
 //dbConfig 파일을 확인해주세요
+
+//const pool = require('../config/dbConfig');
+
+const pool = require('../config/testdbConfig');
+
 const pool = require('../../config/db_config');
 
 module.exports = { // 두 개의 메소드 module화
@@ -41,15 +46,17 @@ module.exports = { // 두 개의 메소드 module화
         const value = inputvalue;
         let result;
         try {
-            var connection = await pool.getConnection();
+            
+            var connection = await pool.getConnection(); 
+            
             result = await connection.query(query, value) || null;
-            console.log(result)
+            
         } catch (err) {
-            console.log(err);
+            //console.log(err);
             connection.rollback(() => {});
             next(err);
         } finally {
-            pool.releaseConnection(connection);
+            connection.release();
             if(cb){
                 cb(result);
             }
