@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
 
 
 //카테고리 생성
-//저장할 정보 : hashtag 테이블 -> name, is_category
+//req.body : name, is_category
 router.post('/', authUtil.isAdmin, async(req, res) => {
     const { name, is_category } = req.body;
     if (!name || !is_category) {
@@ -31,17 +31,13 @@ router.post('/', authUtil.isAdmin, async(req, res) => {
     const postCategoriesQuery = 'INSERT INTO hashtag (name, is_category) VALUES (?,?)';
     const postCategoriesResult = await db.queryParam_Parse(postCategoriesQuery, [name, is_category]);
 
-    const hashtagIdx = postCategoriesResult.insertId;
-    console.log("hashtagIdx : " + hashtagIdx);
-    const postCreatorCategoryQuery = 'INSERT INTO creator_category (hashtag_idx) VALUES (?)';
-    const postCreatorCategoryResult = await db.queryParam_Parse(postCreatorCategoryQuery, [hashtagIdx]);
-
-    if (!postCategoriesResult || !postCreatorCategoryResult) {
+    if (!postCategoriesResult) {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CATEGORY_INSERT_ERROR));
     } else {
             res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.CATEGORY_INSERT_SUCCESS));
     };
 });
+
 
 // 카테고리 수정
 //수정할 정보 : hashtag 테이블 -> name, is_category

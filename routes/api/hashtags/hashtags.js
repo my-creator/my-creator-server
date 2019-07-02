@@ -22,9 +22,8 @@ router.get('/', async (req, res) => {
     
 
 // 해시태그 생성
-//저장할 정보 : hashtag 테이블 -> name
-//err => child fk constraint fail 아직 수정 못함.
-router.post('/', authUtil.isAdmin, async(req, res) => {
+//req.body : name
+router.post('/', authUtil.isAdmin,async(req, res) => {
     const { name } = req.body;
     if (!name) {
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
@@ -32,15 +31,10 @@ router.post('/', authUtil.isAdmin, async(req, res) => {
     const postHashtagsQuery = 'INSERT INTO hashtag (name) VALUES (?)';
     const postHashtagsResult = await db.queryParam_Parse(postHashtagsQuery, [name]);
 
-    const hashtagIdx = postHashtagsResult.insertId;
-    console.log("hashtagIdx : " + hashtagIdx);
-    const postCreatorHashtagQuery = 'INSERT INTO creator_hashtag (hashtag_idx) VALUES (?)';
-    const postCreatorHashtagResult = await db.queryParam_Parse(postCreatorHashtagQuery, [hashtagIdx]);
-
-    if (!postHashtagsResult || !postCreatorHashtagResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CATEGORY_INSERT_ERROR));
+    if (!postHashtagsResult ) {
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.HASHTAG_INSERT_ERROR));
     } else {
-        res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.CATEGORY_INSERT_SUCCESS));
+        res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.HASHTAG_INSERT_SUCCESS));
     };
 });
 
