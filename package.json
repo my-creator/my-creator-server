@@ -9,8 +9,9 @@
   "dependencies": {
     "aws-sdk": "^2.485.0",
     "cookie-parser": "~1.4.3",
+    "crypto": "^1.0.1",
     "debug": "~2.6.9",
-    "express": "~4.16.0",
+    "express": "^4.16.4",
     "http-errors": "~1.6.2",
     "jade": "~1.11.0",
     "jsonwebtoken": "^8.5.1",
@@ -25,5 +26,8 @@
     "rand-token": "^0.4.0",
     "url": "^0.11.0",
     "urlencode": "^1.1.0"
+
+    "rand-token": "^0.4.0"
+
   }
 }
