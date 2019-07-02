@@ -10,14 +10,15 @@ module.exports = { // 두 개의 메소드 module화
         const query = args[0];
         let result;
 
+        console.log(query);
         try {
             var connection = await pool.getConnection(); // connection을 pool에서 하나 가져온다.
-            result = await connection.query(query) || null; // query문의 결과 || null 값이 result에 들어간다.
+            result = await connection.query(query); // query문의 결과 || null 값이 result에 들어간다.
         } catch (err) {
             connection.rollback(() => {});
             next(err);
         } finally {
-            pool.releaseConnection(connection); // waterfall 에서는 connection.release()를 사용했지만, 이 경우 pool.releaseConnection(connection) 을 해준다.
+            connection.release(); // waterfall 에서는 connection.release()를 사용했지만, 이 경우 pool.releaseConnection(connection) 을 해준다.
             return result;
         }
 
@@ -27,9 +28,10 @@ module.exports = { // 두 개의 메소드 module화
         const value = args[1]; // array
         let result;
 
+
         try {
             var connection = await pool.getConnection(); // connection을 pool에서 하나 가져온다.
-            result = await connection.query(query, value) || null; // 두 번째 parameter에 배열 => query문에 들어갈 runtime 시 결정될 value
+            result = await connection.query(query, value); // 두 번째 parameter에 배열 => query문에 들어갈 runtime 시 결정될 value
         } catch (err) {
             connection.rollback(() => {});
             next(err);
@@ -42,6 +44,7 @@ module.exports = { // 두 개의 메소드 module화
         const query = inputquery;
         const value = inputvalue;
         let result;
+
         try {
             
             var connection = await pool.getConnection(); 
@@ -74,7 +77,7 @@ module.exports = { // 두 개의 메소드 module화
             console.log("mysql error! err log =>" + err);
             result = undefined;
         } finally {
-            pool.releaseConnection(connection);
+            connection.release();
             return result;
         }
     }
