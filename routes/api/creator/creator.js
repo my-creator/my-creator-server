@@ -1,5 +1,6 @@
 var express = require('express');
 var router = express.Router();
+
 const upload = require('../../../module/config/multer');
 const defaultRes = require('../../../module/utils/utils');
 const statusCode = require('../../../module/utils/statusCode');
@@ -9,12 +10,7 @@ const db = require('../../../module/utils/pool');
 const moment = require('moment');
 const authUtil = require('../../../module/utils/authUtils');
 const jwtUtil = require('../../../module/utils/jwt');
-const upload = require('../../../config/multer');
-const defaultRes = require('../../../module/utils/utils');
-const statusCode = require('../../../module/utils/statusCode');
-const resMessage = require('../../../module/utils/responseMessage');
-const db = require('../../../module/utils/pool');
-const authUtil = require('../../../module/utils/authUtils');
+
 
 
 // 특정 에피소드의 댓글 조회

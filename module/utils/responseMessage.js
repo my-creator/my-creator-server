@@ -79,8 +79,8 @@ module.exports = {
     USER_SELECTED: "회원 조회 성공.",
     POST_POST_ERROR:"게시글 등록 성공",
     POST_POST_SUCCESS:"게시글 등록 실패",
-    POST_BOARD_ERROR:"게시판 등록 성공",
-    POST_BOARD_SUCCESS:"게시판 등록 실패",
+    POST_BOARD_ERROR:"게시판 등록 실패",
+    POST_BOARD_SUCCESS:"게시판 등록 성공",
     GET_BOARD_SEARCH_ERROR:"게시판 검색 실패",
     GET_BOARD_SEARCH_SUCCESS:"게시판 검색 성공",
     BOARD_LIKE_SELECT_SUCCESS:"즐겨찾기한 게시판 조회 성공",
@@ -108,6 +108,10 @@ module.exports = {
     POST_UPDATE_ERROR:"게시글 수정 에러",
     POST_DELETE_ERROR:"게시글 삭제 에러",
     POST_DELETE_SUCCESS:"게시글 삭제 성공",
-    POST_DELETE_NOTHING:"삭제할 게시글이 존재하지 않습니다."
+    POST_DELETE_NOTHING:"삭제할 게시글이 존재하지 않습니다.",
+    POST_BOARD_REQUEST_SUCCESS:"게시판 요청 성공",
+    POST_BOARD_REQUEST_ERROR:"게시판 요청 실패",
+    GET_BOARD_REQUEST_SUCCESS:"요청 게시판 조회 성공",
+    GET_BOARD_REQUEST_ERROR:"요청 게시판 조회 실패"
 
 };
