@@ -3,7 +3,6 @@ var express = require('express');
 var router = express.Router();
 
 const upload = require('../../../module/config/multer');
-
 const defaultRes = require('../../../module/utils/utils');
 const statusCode = require('../../../module/utils/statusCode');
 const resMessage = require('../../../module/utils/responseMessage');
@@ -11,31 +10,11 @@ const encrypt = require('../../../module/utils/encrypt');
 const db = require('../../../module/utils/pool');
 const moment = require('moment');
 const authUtil = require('../../../module/utils/authUtils');
-
 const jwtUtil = require('../../../module/utils/jwt');
 
 var urlencode = require('urlencode');
 var querystring = require('querystring');
 var url = require('url');
-
-
-//크리에이터 팬 게시판 조회
-router.get('/creator/:creatorIdx', async (req, res) => {
- const {creatorIdx} =req.params;
-//post글 board_idx  = board idx name -> 
-    let getCreatorBoardQuery = `SELECT b.idx, b.name,b.type FROM board b JOIN board_creator bc ON bc.board_idx = b.idx WHERE b.type = 'creator' AND creator_idx = ?`;
-    
-    const getCreatorBoardResult = await db.queryParam_Parse(getCreatorBoardQuery,[creatorIdx]);
-
-    //쿼리문의 결과가 실패이면 null을 반환한다
-    if (!getCreatorBoardResult) { //쿼리문이 실패했을 때
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_BOARD_SELECT_ERROR));
-   } else if(getCreatorBoardResult.length === 0){
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_BOARD_SELECT_ERROR));
-    }else{ //쿼리문이 성공했을 때
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_BOARD_SELECT_SUCCESS,getCreatorBoardResult[0]));
-    }
-});
 
 
 //전체 게시판 조회
@@ -51,6 +30,7 @@ router.get('/', async (req, res) => {
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_SELECT_SUCCESS,getPostResult[0]));
     }
 });
+
 
 
 
@@ -77,11 +57,16 @@ router.get('/like', async (req, res) => {
 
 
 
+//
+      //      const request_idx = JSON.parse(JSON.stringify(getBoardRequestResult[0])) || null;
+            
+         //   if(request_idx.length === 0){
+
 // 게시판 생성
+//게시판 요청 cnt >= 100이면 
 router.post("/", authUtil.isAdmin, async(req, res)=>{
     const {name,type} = req.body;
     //저장 시 필수 값인 게시물Id와 제목(title)이 없으면 실패 response 전송
-    console.log(name,type);
 
     if (!name || !type) {
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
@@ -89,24 +74,30 @@ router.post("/", authUtil.isAdmin, async(req, res)=>{
 
         try{
 
-                let postBoardQuery = `INSERT INTO board(name, type) VALUES(?,?)`;
-                let postBoardResult  = await db.queryParam_Parse(postBoardQuery,[name,type]);
 
-                               
-                if(!postBoardResult){
-                    res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.POST_BOARD_ERROR));
-                }else{
-                    res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_BOARD_SUCCESS));
+                const getBoardRequestQuery = `SELECT request_cnt FROM board_request WHERE name = ?`;
+                const getBoardRequestResult  = await db.queryParam_Parse(getBoardRequestQuery,[name]) || null;
+                const request_cnt = JSON.parse(JSON.stringify(getBoardRequestResult[0])) || null;
+                const req_cnt = request_cnt[0].request_cnt;
+
+                 if(req_cnt >= 100){
+
+                    const postBoardQuery = `INSERT INTO board(name, type) VALUES(?,?)`;
+                    const postBoardResult  = await db.queryParam_Parse(postBoardQuery,[name,type]);
+                    if(!getBoardRequestResult){
+                        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.POST_BOARD_ERROR));
+                     }else{
+                        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_BOARD_SUCCESS));
+                    }
+
+                 }else{
+                    res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_BOARD_ERROR));
                 }
-
-
             }catch(err){
                 res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.POST_BOARD_ERROR));
             }
-
         }
 });
-
 
 
 
@@ -140,14 +131,6 @@ router.put('/:boardIdx', authUtil.isAdmin, async(req, res) => {
 });
 
 
-
-
-
-
-
-
-
-
 //게시판 삭제
 router.delete('/:boardIdx', authUtil.isAdmin, async(req, res) => {
     const boardIdx = req.params.boardIdx;
@@ -166,6 +149,7 @@ router.delete('/:boardIdx', authUtil.isAdmin, async(req, res) => {
         }
     }
 });
+
 
 
 
@@ -198,6 +182,8 @@ router.post('/:boardIdx/like', authUtil.isLoggedin,  async(req, res) => {
     
     });
 });
+
+
 
 //게시판 즐겨찾기 취소
 router.delete(':/boardIdx/unlike', authUtil.isLoggedin, async(req, res) => {
@@ -232,6 +218,26 @@ router.delete(':/boardIdx/unlike', authUtil.isLoggedin, async(req, res) => {
 });
 
 
+//크리에이터 팬 게시판 조회
+router.get('/creator/:creatorIdx', async (req, res) => {
+ const {creatorIdx} =req.params;
+//post글 board_idx  = board idx name -> 
+    let getCreatorBoardQuery = `SELECT b.idx, b.name,b.type FROM board b JOIN board_creator bc ON bc.board_idx = b.idx WHERE b.type = 'creator' AND creator_idx = ?`;
+    
+    const getCreatorBoardResult = await db.queryParam_Parse(getCreatorBoardQuery,[creatorIdx]);
+
+    //쿼리문의 결과가 실패이면 null을 반환한다
+    if (!getCreatorBoardResult) { //쿼리문이 실패했을 때
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_BOARD_SELECT_ERROR));
+   } else if(getCreatorBoardResult.length === 0){
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_BOARD_SELECT_ERROR));
+    }else{ //쿼리문이 성공했을 때
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_BOARD_SELECT_SUCCESS,getCreatorBoardResult[0]));
+    }
+});
+
+
+
 //게시판 검색 한글 쿼리 입력 으로 수정
 //localhost:3000/api/boards/search?name=free&type=category
 router.get('/search', async (req, res) => {
@@ -253,6 +259,82 @@ router.get('/search', async (req, res) => {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.GET_BOARD_SEARCH_ERROR));
     } else { //쿼리문이 성공했을 때
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.GET_BOARD_SEARCH_SUCCESS,getBoardSearchResult[0]));
+    }
+});
+
+//게시판 요청(성공)
+router.post("/request", authUtil.isLoggedin, async(req, res)=>{
+    const {name,link} = req.body;
+    //저장 시 필수 값인 게시물Id와 제목(title)이 없으면 실패 response 전송
+
+    if (!name || !link) {
+        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
+    }
+
+        try{
+            let getBoardRequestQuery  = "SELECT idx FROM board_request WHERE name = ?";
+            const getBoardRequestResult = await db.queryParam_Parse(getBoardRequestQuery,name);
+    
+            
+            const request_idx = JSON.parse(JSON.stringify(getBoardRequestResult[0])) || null;
+            
+            if(request_idx.length === 0){
+            
+                //없으면
+                //res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.POST_BOARD_REQUEST_ERROR));
+                let postBoardRequestQuery = `INSERT INTO board_request(name, link,request_cnt) VALUES(?,?,1)`;
+                let postBoardRequestResult  = await db.queryParam_Parse(postBoardRequestQuery,[name,link]);
+            
+                if(!postBoardRequestResult){
+                    res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.POST_BOARD_REQUEST_ERROR));
+                }else{
+                    res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_BOARD_REQUEST_SUCCESS));
+                }
+
+            }else{
+                
+            
+                const req_idx = request_idx[0].idx;
+            
+                let updateBoardRequestQuery = `UPDATE board_request SET request_cnt = request_cnt+ 1 WHERE idx = ?`;
+                let updateBoardRequestResult  = await db.queryParam_Parse(updateBoardRequestQuery,[req_idx]);
+            
+                if(!updateBoardRequestResult){
+                    res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.POST_BOARD_REQUEST_ERROR));
+                }else{
+                    res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_BOARD_REQUEST_SUCCESS));
+                }
+            }
+            
+        }catch(err){
+            console.log(err);
+            res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.POST_BOARD_REQUEST_ERROR));
+        }
+
+
+        
+
+
+            
+                               
+});
+
+
+//게시판 요청 완료 창(성공)
+router.get('/request/:boardRequestIdx', authUtil.isLoggedin,async (req, res) => {
+    const {boardRequestIdx} = req. params;
+    let getBoardRequestFinishedQuery  = "SELECT request_cnt FROM board_request WHERE idx = ?";
+
+
+    const getBoardRequestFinishedResult = await db.queryParam_Parse(getBoardRequestFinishedQuery,[boardRequestIdx]);
+
+    console.log("ta\n");
+    console.log(boardRequestIdx);
+    //쿼리문의 결과가 실패이면 null을 반환한다
+    if (!getBoardRequestFinishedResult) { //쿼리문이 실패했을 때
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.GET_BOARD_SEARCH_ERROR));
+    } else { //쿼리문이 성공했을 때
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.GET_BOARD_SEARCH_SUCCESS,getBoardRequestFinishedResult[0]));
     }
 });
 
