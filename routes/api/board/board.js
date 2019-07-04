@@ -56,6 +56,28 @@ router.get('/like', async (req, res) => {
 });
 
 
+//즐겨찾기 하지 않은 게시판 리스트 조회(진행 중)
+router.get('/unlike', async (req, res) => {
+
+    const {userIdx} = req.body;
+    console.log("likeboard\n");
+    console.log(userIdx);
+
+    let getLikeBoardQuery  = "SELECT b.idx, b.name,b.type FROM board b JOIN board_like bl ON bl.board_idx = b.idx WHERE user_idx = ?";
+    
+    const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery,[userIdx]);
+
+    //쿼리문의 결과가 실패이면 null을 반환한다
+    if (!getLikeBoardResult) { //쿼리문이 실패했을 때
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_SELECT_ERROR));
+    } else if(getLikeBoardResult.length === 0){
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_SELECT_ERROR));
+    }else{ //쿼리문이 성공했을 때
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_LIKE_SELECT_SUCCESS,getLikeBoardResult[0]));
+    }
+});
+
+
 
 //
       //      const request_idx = JSON.parse(JSON.stringify(getBoardRequestResult[0])) || null;

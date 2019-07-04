@@ -62,7 +62,6 @@ router.get('/detail/:postIdx', async (req, res) => {
 });
 
 //커뮤니티 창 작은 최신글 순 조회(게시판 상관없이 5개만)성공
-
 //썸네일 추가해야함
 
 router.get('/new', async (req, res) => { 

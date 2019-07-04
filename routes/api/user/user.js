@@ -106,12 +106,10 @@ const passwd = req.body.passwd;
 });
 
 
-
 //회원정보 수정 미들웨어 사용
 router.post('/', authUtil.isLoggedin,  (req, res) => {
     
     const {id,name,nickname,sex,birth} = req.body;
-
 
     // body나 params 없으면 에러 응답
     if(!id || (!name && !nickname && !sex && !birth)){
@@ -148,7 +146,7 @@ router.post('/', authUtil.isLoggedin,  (req, res) => {
 
 
 
-// 회원 탈퇴(진행 중) -isLoggedin안에있는 userid를 불러오는지/ 직접 idx를 body나 params에 불러오는지
+// 회원 탈퇴 -isLoggedin안에있는 userid를 불러오는지/ 직접 idx를 body나 params에 불러오는지
 router.delete('/', authUtil.isLoggedin,  async(req, res) => {
     
     
@@ -211,7 +209,6 @@ router.post('/signin', async (req, res) => {
 //회원가입 id passwd name nickname sex birth
 router.post('/signup', async (req, res) => {
     const {id,passwd,name,nickname,sex,birth} = req.body;
-
 
     if (!id || !passwd || !name) {
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
