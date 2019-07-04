@@ -16,9 +16,12 @@ const jwtUtil = require('../../../module/utils/jwt');
 
 
 // 댓글 작성
+
+//익명체크시 ? 질문하기!!!
 router.post('/', authUtil.isLoggedin, async(req, res) => {
     const {postIdx,comments} = req.body;
     const userIdx = req.decoded.user_idx;
+
 
     //게시글 있는지
     const getPostQuery = "SELECT * FROM post WHERE idx = ?";
@@ -31,7 +34,7 @@ router.post('/', authUtil.isLoggedin, async(req, res) => {
             res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.POSTS_SELECT_NOTHING + `: ${postIdx}`));
     }
     
-        const postCommentsQuery = "INSERT INTO reply(post_idx, user_idx, content) VALUES(?, ?, ?)";
+        const postCommentsQuery = "INSERT INTO reply(post_idx, user_idx, content,create_time) VALUES(?, ?, ?,CURDATE())";
         const postCommentsResult = db.queryParam_Parse(postCommentsQuery, [postIdx,userIdx,comments], function(result){
             if (!result) {
                 res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.COMMENT_INSERT_ERROR));
@@ -43,11 +46,12 @@ router.post('/', authUtil.isLoggedin, async(req, res) => {
 });
 
 
-// 댓글 조회
+// 댓글 조회성공
+//유저명 시간 내용 썸네일
 router.get('/:postIdx', async(req, res) => {
     const {postIdx} = req.params;
     
-    const getCommentsQuery = "SELECT * FROM reply WHERE post_idx = ?";
+    const getCommentsQuery = "SELECT r.*, u.name,u.thumbnail FROM ( reply r LEFT OUTER JOIN user u ON u.idx = r.user_idx) WHERE r.post_idx = ? GROUP BY r.idx ORDER BY r.create_time DESC";
     const getCommentsResult = await db.queryParam_Parse(getCommentsQuery, [postIdx]);
 
     if (!getCommentsResult) {
