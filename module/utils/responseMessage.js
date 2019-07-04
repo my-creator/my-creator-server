@@ -68,6 +68,9 @@ module.exports = {
     CREATOR_CATEGORY_INSERT_ERROR : "크리에이터 해시태그 추가 에러",
     CREATOR_CATEGORY_DELETE_SUCCESS : "크리에이터 해시태그 삭제 성공" , 
     CREATOR_CATEGORY_DELETE_ERROR : "크리에이터 해시태그 삭제 에러",
+    CREATOR_CUMULATIVE_VIEWS_SELECT_SUCCESS : "크리에이터 누적 조회수 조회 성공", 
+    CREATOR_CUMULATIVE_VIEWS_SELECT_ERROR : "크리에이터 누적 조회수 조회 에러", 
+
 
     INVALID_TOKEN: "잘못된 형식의 토큰입니다.",
     EMPTY_TOKEN: "토큰값이 존재하지 않습니다.",
@@ -78,4 +81,6 @@ module.exports = {
     CREATE_TOKEN: "토큰 발급 완료.",
     REFRESH_TOKEN: "토큰 재발급 완료.",
 
+    NO_SELECT_AUTHORITY: "조회 권한 없음.",
+    USER_SELECTED: "회원 조회 성공."
 };
