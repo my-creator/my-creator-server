@@ -51,7 +51,7 @@ module.exports = {
     },
     refresh: (user) => {
         const payload = {
-            user_idx: user[0].user_idx,
+            user_idx: user[0].idx,
             grade: user[0].grade,
             name: user[0].name
         };
