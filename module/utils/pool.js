@@ -4,7 +4,7 @@
 
 //const pool = require('../config/dbConfig');
 
-const pool = require('../../config/testdbConfig');
+const pool = require('../../config/testdb_config');
 
 //const pool = require('../../config/db_config');
 
