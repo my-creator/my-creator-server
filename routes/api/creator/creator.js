@@ -2,14 +2,13 @@
 var express = require('express');
 var router = express.Router();
 
-const upload = require('../../../module/config/multer');
+const upload = require('../../../config/multer');
 const defaultRes = require('../../../module/utils/utils');
 const statusCode = require('../../../module/utils/statusCode');
 const resMessage = require('../../../module/utils/responseMessage');
-const encrypt = require('../../../module/utils/encrypt');
 const db = require('../../../module/utils/pool');
-const moment = require('moment');
 const authUtil = require('../../../module/utils/authUtils');
+const moment = require('moment');
 const jwtUtil = require('../../../module/utils/jwt');
 
 //4. 크리에이터 프로필 조회
@@ -315,6 +314,5 @@ router.delete('/:creatorIdx/category/:categoryIdx', async(req, res) => {
 //         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.COMMENT_SELECT_SUCCESS, getCommentsResult));
 //     }
 // });
-
 
 module.exports = router;
