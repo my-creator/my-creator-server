@@ -17,7 +17,7 @@ const jwtUtil = require('../../../module/utils/jwt');
 
 // 댓글 작성
 
-//익명체크시 ? 질문하기!!!
+//익명!!!!!!!!!!!!!!!!!!!!!!!!!!
 router.post('/', authUtil.isLoggedin, async(req, res) => {
     const {postIdx,comments} = req.body;
     const userIdx = req.decoded.user_idx;
@@ -48,10 +48,13 @@ router.post('/', authUtil.isLoggedin, async(req, res) => {
 
 // 댓글 조회성공
 //유저명 시간 내용 썸네일
+//익명!!!!!!!!!!!!!!!!!!!!!
 router.get('/:postIdx', async(req, res) => {
     const {postIdx} = req.params;
     
-    const getCommentsQuery = "SELECT r.*, u.name,u.thumbnail FROM ( reply r LEFT OUTER JOIN user u ON u.idx = r.user_idx) WHERE r.post_idx = ? GROUP BY r.idx ORDER BY r.create_time DESC";
+    const getCommentsQuery = `SELECT r.*, u.name,u.thumbnail 
+    FROM ( reply r INNER JOIN user u ON u.idx = r.user_idx) 
+    WHERE r.post_idx = ? GROUP BY r.idx ORDER BY r.create_time DESC`;
     const getCommentsResult = await db.queryParam_Parse(getCommentsQuery, [postIdx]);
 
     if (!getCommentsResult) {
@@ -62,6 +65,7 @@ router.get('/:postIdx', async(req, res) => {
 });
 
 // 댓글 수정
+//익명!!!!!!!!!!!!!!!!!!!!!
 router.put('/:replyIdx', authUtil.isCommentWriter,  (req, res) => {
     
     const {replyIdx} = req.params;

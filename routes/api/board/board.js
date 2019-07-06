@@ -11,15 +11,14 @@ const db = require('../../../module/utils/pool');
 const moment = require('moment');
 const authUtil = require('../../../module/utils/authUtils');
 const jwtUtil = require('../../../module/utils/jwt');
-
 var urlencode = require('urlencode');
 var querystring = require('querystring');
 var url = require('url');
-
-
+//meme2367 1234
+//eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkeCI6MTIsImdyYWRlIjoiQURNSU4iLCJuYW1lIjoi66qF64uk7JewIiwiaWF0IjoxNTYyNDIzOTUyLCJleHAiOjE1NjM2MzM1NTIsImlzcyI6InlhbmcifQ.DbGROLSRyAm_NN1qcQ5sLmjxKpUACyMsFQRiDd2z3Lw
 //전체 게시판 조회
 router.get('/', async (req, res) => { 
-    let getPostQuery  = "SELECT * FROM post";
+    let getPostQuery  = "SELECT * FROM board";
     
     const getPostResult = await db.queryParam_None(getPostQuery);
 
@@ -41,7 +40,34 @@ router.get('/like', async (req, res) => {
     console.log("likeboard\n");
     console.log(userIdx);
 
-    let getLikeBoardQuery  = "SELECT b.idx, b.name,b.type FROM board b JOIN board_like bl ON bl.board_idx = b.idx WHERE user_idx = ?";
+    let getLikeBoardQuery  = `SELECT b.idx, b.name,b.type FROM board b 
+    INNER JOIN board_like bl ON bl.board_idx = b.idx 
+    WHERE user_idx = ?`;
+    
+    const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery,[userIdx]);
+
+    //쿼리문의 결과가 실패이면 null을 반환한다
+    if (!getLikeBoardResult) { //쿼리문이 실패했을 때
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_SELECT_ERROR));
+    } else if(getLikeBoardResult.length === 0){
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_SELECT_ERROR));
+    }else{ //쿼리문이 성공했을 때
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_LIKE_SELECT_SUCCESS,getLikeBoardResult[0]));
+    }
+});
+
+
+//즐겨찾기 하지 않은 게시판 리스트 조회(진행 중)
+
+router.get('/unlike', async (req, res) => {
+
+    const {userIdx} = req.body;
+    console.log("likeboard\n");
+    console.log(userIdx);
+
+    let getLikeBoardQuery  = `SELECT b.idx, b.name,b.type FROM board b 
+    INNER JOIN board_like bl ON bl.board_idx = b.idx 
+    WHERE user_idx = ?`;
     
     const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery,[userIdx]);
 
@@ -57,28 +83,24 @@ router.get('/like', async (req, res) => {
 
 
 
-//
-      //      const request_idx = JSON.parse(JSON.stringify(getBoardRequestResult[0])) || null;
-            
-         //   if(request_idx.length === 0){
 
 // 게시판 생성
-//게시판 요청 cnt >= 100이면 
 router.post("/", authUtil.isAdmin, async(req, res)=>{
     const {name,type} = req.body;
     //저장 시 필수 값인 게시물Id와 제목(title)이 없으면 실패 response 전송
 
-    if (!name || !type) {
-        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
+    if (!name && !type) {
+        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.NULL_VALUE));
     } else {
 
         try{
-
-
                 const getBoardRequestQuery = `SELECT request_cnt FROM board_request WHERE name = ?`;
                 const getBoardRequestResult  = await db.queryParam_Parse(getBoardRequestQuery,[name]) || null;
+                
+                console.log(getBoardRequestResult[0]);
                 const request_cnt = JSON.parse(JSON.stringify(getBoardRequestResult[0])) || null;
                 const req_cnt = request_cnt[0].request_cnt;
+            
 
                  if(req_cnt >= 100){
 
@@ -196,7 +218,7 @@ router.delete(':/boardIdx/unlike', authUtil.isLoggedin, async(req, res) => {
     // just check the
     let getLikeBoardQuery  = "SELECT * FROM board_like WHERE board_idx = ? AND user_idx = ?";
     const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery, params);
-
+    
     if(!getLikeBoardResult){
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.BOARD_LIKE_SELECT_ERROR));
     }else if(getLikeBoardResult.length != 0){//이미 즐겨찾기한 상태
@@ -222,7 +244,9 @@ router.delete(':/boardIdx/unlike', authUtil.isLoggedin, async(req, res) => {
 router.get('/creator/:creatorIdx', async (req, res) => {
  const {creatorIdx} =req.params;
 //post글 board_idx  = board idx name -> 
-    let getCreatorBoardQuery = `SELECT b.idx, b.name,b.type FROM board b JOIN board_creator bc ON bc.board_idx = b.idx WHERE b.type = 'creator' AND creator_idx = ?`;
+    let getCreatorBoardQuery = `SELECT b.idx, b.name,b.type FROM board b 
+    INNER JOIN board_creator bc ON bc.board_idx = b.idx 
+    WHERE b.type = 'creator' AND creator_idx = ?`;
     
     const getCreatorBoardResult = await db.queryParam_Parse(getCreatorBoardQuery,[creatorIdx]);
 
@@ -238,7 +262,7 @@ router.get('/creator/:creatorIdx', async (req, res) => {
 
 
 
-//게시판 검색 한글 쿼리 입력 으로 수정
+//게시판 검색 한글 쿼리 입력 으로 수정!!!!
 //localhost:3000/api/boards/search?name=free&type=category
 router.get('/search', async (req, res) => {
  let {name, type} = req.query;
