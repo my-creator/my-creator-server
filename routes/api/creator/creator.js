@@ -83,6 +83,30 @@ router.delete('/:creatorIdx', authUtil.isAdmin, async(req, res) => {
     }
 });
 
+//4. 크리에이터 프로필 조회
+//크리에이터명 프로필사진 크리에이터설명 카테고리(먹방2위)  즐겨찾는유저(팬게시판 좋아요) 구독자 누적조회수 
+//랭크 등급, 업적등급
+//팬게시판 여부
+//랭킹 경험치, 업적 경험치(마스터일땐 경험치 없다)
+//랭킹 이미지,업적 이미지!!!! 등급 이미지!!!!!!!!!!!
+//순위
+//카테고리 먹방 2위!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+router.get('/:creatorIdx', async (req, res) => {
+    const { creatorIdx } = req.params;
+
+    const getCreatorPrifileQuery = `SELECT c.*,h.name AS 'category', bc.creator_idx AS 'is_board' 
+    FROM (( (creator c INNER JOIN creator_category cc ON c.idx = cc.creator_idx) 
+    INNER JOIN hashtag h ON h.idx = cc.hashtag_idx)
+    INNER JOIN board_creator bc ON bc.creator_idx = c.idx) WHERE c.idx = ?`;
+    const getCreatorPrifileResult = await db.queryParam_Parse(getCreatorPrifileQuery, [creatorIdx]);
+
+    if (!getCreatorPrifileResult) {
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_PROFILE_ERROR));
+    } else {
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_SELECT_PROFILE_SUCCESS, getCreatorPrifileResult));
+    }
+});
+
 
 //4. 크리에이터 대표 영상 조회     -----> test해야함
 //view_cnt 기준으로 정렬 DESC
