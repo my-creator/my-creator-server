@@ -48,6 +48,8 @@ module.exports = {
     CREATOR_SELECT_PROFILE_ERROR : "크리에이터 프로필 조회 에러",
     CREATOR_POPULARVIDEO_SELECT_SUCCESS  : "크리에이터 인기영상 조회 성공",
     CREATOR_POPULARVIDEO_SELECT_ERROR: "크리에이터 인기영상 조회 에러",
+    CREATOR_NEWVIDEO_SELECT_SUCCESS  : "크리에이터 최신영상 조회 성공",
+    CREATOR_NEWVIDEO_SELECT_ERROR: "크리에이터 최신영상 조회 에러",
     CREATOR_HOT_SELECT_SUCCESS : "실시간 핫크리에이터 조회 성공",
     CREATOR_HOT_SELECT_ERROR : "실시간 핫크리에이터 조회 성공",
     CREATOR_FOLLOWER_SELECT_SUCCESS : "특정 크리에이터 구독자수 조회 성공" ,
