@@ -16,7 +16,7 @@ var querystring = require('querystring');
 var url = require('url');
 //meme2367 1234
 //eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkeCI6MTIsImdyYWRlIjoiQURNSU4iLCJuYW1lIjoi66qF64uk7JewIiwiaWF0IjoxNTYyNDIzOTUyLCJleHAiOjE1NjM2MzM1NTIsImlzcyI6InlhbmcifQ.DbGROLSRyAm_NN1qcQ5sLmjxKpUACyMsFQRiDd2z3Lw
-//전체 게시판 조회
+//전체 게시판 조회 okdk
 router.get('/', async (req, res) => { 
     let getPostQuery  = "SELECT * FROM board";
     
@@ -33,7 +33,7 @@ router.get('/', async (req, res) => {
 
 
 
-//즐겨찾기한 게시판 조회
+//즐겨찾기한 게시판 조회 okdk
 router.get('/like', async (req, res) => {
 
     const {userIdx} = req.body;
@@ -57,40 +57,54 @@ router.get('/like', async (req, res) => {
 });
 
 
-//즐겨찾기 하지 않은 게시판 리스트 조회(진행 중)
+//즐겨찾기 하지 않은 게시판 리스트 조회 okdk
 
 router.get('/unlike', async (req, res) => {
 
     const {userIdx} = req.body;
-    console.log("likeboard\n");
+    console.log("unlikeboard\n");
     console.log(userIdx);
+    //user없는 경우
 
-    let getLikeBoardQuery  = `SELECT b.idx, b.name,b.type FROM board b 
-    INNER JOIN board_like bl ON bl.board_idx = b.idx 
-    WHERE user_idx = ?`;
-    
-    const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery,[userIdx]);
 
-    //쿼리문의 결과가 실패이면 null을 반환한다
-    if (!getLikeBoardResult) { //쿼리문이 실패했을 때
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_SELECT_ERROR));
-    } else if(getLikeBoardResult.length === 0){
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_SELECT_ERROR));
-    }else{ //쿼리문이 성공했을 때
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_LIKE_SELECT_SUCCESS,getLikeBoardResult[0]));
+    const getMembershipByIdQuery = 'SELECT * FROM user WHERE idx = ?';
+    const getMembershipByIdResult = await db.queryParam_Parse(getMembershipByIdQuery, [userIdx]);
+
+    if (!getMembershipByIdResult) {
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.MEMBERSHIP_SELECT_FAIL));
+    } else if (getMembershipByIdResult[0].length === 0) {//없는 경우
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USERINFO_SELECT_FAIL));
+    }else{
+
+        let getLikeBoardQuery  = `SELECT bb.* FROM board bb 
+        WHERE bb.idx NOT IN (SELECT b.idx FROM board b 
+        INNER JOIN board_like bl ON bl.board_idx = b.idx 
+        WHERE user_idx = ?);`;
+        
+        const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery,[userIdx]);
+
+        //쿼리문의 결과가 실패이면 null을 반환한다
+        if (!getLikeBoardResult) { //쿼리문이 실패했을 때
+            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_SELECT_ERROR));
+        } else if(getLikeBoardResult.length === 0){
+            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_SELECT_ERROR));
+        }else{ //쿼리문이 성공했을 때
+            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_LIKE_SELECT_SUCCESS,getLikeBoardResult[0]));
+        }
     }
+
 });
 
 
 
 
-// 게시판 생성
+// 게시판 생성 okdk
 router.post("/", authUtil.isAdmin, async(req, res)=>{
     const {name,type} = req.body;
     //저장 시 필수 값인 게시물Id와 제목(title)이 없으면 실패 response 전송
 
     if (!name && !type) {
-        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.NULL_VALUE));
+        res.status(200).send(defaultRes.successTrue(statusCode.BAD_REQUEST, resMessage.NULL_VALUE));
     } else {
 
         try{
@@ -108,7 +122,9 @@ router.post("/", authUtil.isAdmin, async(req, res)=>{
                     const postBoardResult  = await db.queryParam_Parse(postBoardQuery,[name,type]);
                     if(!getBoardRequestResult){
                         res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.POST_BOARD_ERROR));
-                     }else{
+                     } else if(getBoardRequestResult === 0){
+                        res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.POST_BOARD_ERROR));
+                    }else{
                         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_BOARD_SUCCESS));
                     }
 
@@ -174,35 +190,34 @@ router.delete('/:boardIdx', authUtil.isAdmin, async(req, res) => {
 
 
 
-
-//게시판 즐겨찾기
+//게시판 즐겨찾기 okdk
 router.post('/:boardIdx/like', authUtil.isLoggedin,  async(req, res) => {
     const {boardIdx} = req.params;
-    const params = [boardIdx,req.decoded.user_idx];
 
-    console.log("liketest\n");
-    console.log(params);
     // just check the
     let getLikeBoardQuery  = "SELECT * FROM board_like WHERE board_idx = ? AND user_idx = ?";
-    const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery, params);
+    const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery, [boardIdx,req.decoded.user_idx]);
+
 
     if(!getLikeBoardResult){
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.BOARD_LIKE_SELECT_ERROR));
-    }else if(getLikeBoardResult.length != 0){//이미 즐겨찾기한 상태
+    }else if(getLikeBoardResult[0].length != 0){//이미 즐겨찾기한 상태
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.BOARD_LIKE_INSERT_ERROR));
+    }else if(getLikeBoardResult[0].length === 0){
+        const postLikeBoardQuery = "INSERT INTO board_like(user_idx, board_idx) VALUES(?, ?)";
+        const postLikeBoardResult = await db.queryParam_Parse(postLikeBoardQuery, [req.decoded.user_idx,boardIdx]);
+        
+            if (!postLikeBoardResult) {
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_INSERT_ERROR));
+            }else if(postLikeBoardResult === 0){
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USERINFO_SELECT_FAIL));
+            }
+            else{
+                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_LIKE_INSERT_SUCCESS));
+            }
+
     }
 
-    const postLikeBoardQuery = "INSERT INTO `board_like`(user_idx, board_idx) VALUES(?, ?)";
-    const postLikeBoardResult = db.queryParam_Parse(postLikeBoardQuery, params);
-    
-    postLikeBoardResult.then((data)=>{
-        if (!data) {
-            return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_INSERT_ERROR));
-        }else{
-            return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_INSERT_SUCCESS));
-        }
-    
-    });
 });
 
 
@@ -286,7 +301,7 @@ router.get('/search', async (req, res) => {
     }
 });
 
-//게시판 요청(성공)
+//게시판 요청 okdk
 router.post("/request", authUtil.isLoggedin, async(req, res)=>{
     const {name,link} = req.body;
     //저장 시 필수 값인 게시물Id와 제목(title)이 없으면 실패 response 전송
