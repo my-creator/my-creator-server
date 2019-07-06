@@ -48,8 +48,8 @@ router.get('/', async(req, res) => {
 
 */
 
-//회원 정보 조회(진행 중)
-router.get('/:useridx', async (req, res) => {
+//회원 정보 조회 okdk
+router.get('/:userIdx', async (req, res) => {
 const passwd = req.body.passwd;
  const idx = req.params.userIdx;
 
@@ -66,16 +66,9 @@ const passwd = req.body.passwd;
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USERINFO_SELECT_FAIL));
     } else { //쿼리문이 성공했을 때
 
-        const firstMembershipByIdResult=getMembershipByIdResult;
+        const firstMembershipByIdResult=JSON.parse(JSON.stringify(getMembershipByIdResult[0]));
 
-
-        console.log(getMembershipByIdResult);
-        
-        
-        console.log(firstMembershipByIdResult);
-
-        encrypt.getHashedPassword(passwd, firstMembershipByIdResult[0].salt, res, async (hashedPassword) => {
-            
+        encrypt.getHashedPassword(passwd, firstMembershipByIdResult[0].salt, res, async (hashedPassword) => {            
             if (firstMembershipByIdResult[0].passwd !== hashedPassword) {
                 // 비밀번호가 틀렸을 경우
                 res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USERINFO_SELECT_FAIL));
@@ -86,16 +79,20 @@ const passwd = req.body.passwd;
                 delete firstMembershipByIdResult[0].salt;
                 //로그인 정보 일치할때 정보 가져오기 
 
-                const getUserInfoQuery = 'select id,passwd,name,nickname,sex,birth FROM user WHERE idx = ?';
+                const getUserInfoQuery = 'select id,passwd,name,nickname,gender,birth,profile_url FROM user WHERE idx = ?';
                 const getUserInfoResult = await db.queryParam_Parse(getUserInfoQuery,[idx]);
+
 
                 //query 에러
                 if(!getUserInfoResult){
+                    
                     res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USERINFO_SELECT_FAIL));
                 }else if(getUserInfoResult === 0){
+                    
                     res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USERINFO_SELECT_FAIL));
                 }else{//쿼리문 성공시
-                    res.status(200).send(defaultRes.successFalse(statusCode.OK, resMessage.USERINFO_SELECT_SUCCESS,getUserInfoResult));
+                    
+                    res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.USERINFO_SELECT_SUCCESS,getUserInfoResult[0]));
                 }
 
 
@@ -106,34 +103,40 @@ const passwd = req.body.passwd;
 });
 
 
-//회원정보 수정 미들웨어 사용
+
+        
+        
+            
+
+
+
+
+//회원정보 수정 okdk
 router.post('/', authUtil.isLoggedin,  (req, res) => {
     
-    const {id,name,nickname,sex,birth} = req.body;
+    const {name,nickname,gender,birth,profile_url} = req.body;
+    const idx = req.decoded.user_idx;
 
     // body나 params 없으면 에러 응답
-    if(!id || (!name && !nickname && !sex && !birth)){
-        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
+    if(!idx || (!name && !nickname && !gender && !birth && !profile_url )){
+        res.status(400).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
     }
     
     let putUserQuery = "UPDATE user SET ";
     if(name) putUserQuery+= ` name = '${name}',`;
     if(nickname) putUserQuery+= ` nickname = '${nickname}',`;
-    if(sex) putUserQuery+= ` sex = '${sex}',`;
+    if(gender) putUserQuery+= ` gender = '${gender}',`;
     if(birth) putUserQuery+= ` birth = '${birth}',`;
+    if(profile_url) putUserQuery+= ` profile_url = '${profile_url}',`;
 
 
     putUserQuery = putUserQuery.slice(0, putUserQuery.length-1);
     
-    putUserQuery += " WHERE id = ?";
-    
-    
+    putUserQuery += " WHERE idx = ?";
 
-    db.queryParam_Parse(putUserQuery, id, function(result){
-
-
+    db.queryParam_Parse(putUserQuery, idx, function(result){
         if (!result) {
-            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USER_UPDATE_ERROR));
+            res.status(400).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USER_UPDATE_ERROR));
         } else {
             if(result.length  === 0){
                 res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.USER_UPDATE_NOTHING));
@@ -146,20 +149,20 @@ router.post('/', authUtil.isLoggedin,  (req, res) => {
 
 
 
-// 회원 탈퇴 -isLoggedin안에있는 userid를 불러오는지/ 직접 idx를 body나 params에 불러오는지
+// 회원 탈퇴 OKDK
 router.delete('/', authUtil.isLoggedin,  async(req, res) => {
+    const idx = req.decoded.user_idx;
     
-    
-    const deleteUserQuery = "DELETE FROM user WHERE id = ?";
-    const deleteUserResult = await db.queryParam_Parse(deleteUserQuery, [id]);
+    const deleteUserQuery = "DELETE FROM user WHERE idx = ?";
+    const deleteUserResult = await db.queryParam_Parse(deleteUserQuery, [idx]);
 
     if (!deleteUserResult) {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USER_DELETE_ERROR));
     } else {
-        if(deleteUserResult.affectedRows > 0){
-            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.USER_DELETE_SUCCESS));
+        if(deleteUserResult.length  === 0){
+            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.USER_DELETE_NOTHING));
         }else{
-            res.status(200).send(defaultRes.successFalse(statusCode.OK, resMessage.USER_DELETE_NOTHING));
+            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.USER_DELETE_SUCCESS));
         }
     }
 });
@@ -167,7 +170,7 @@ router.delete('/', authUtil.isLoggedin,  async(req, res) => {
 
 
 
-//로그인
+//로그인 okdk
 router.post('/signin', async (req, res) => {
 
  const {id, passwd} = req.body;
@@ -206,16 +209,18 @@ router.post('/signin', async (req, res) => {
     }
 });
 
-//회원가입 id passwd name nickname sex birth
+//회원가입 OKDK
 router.post('/signup', async (req, res) => {
-    const {id,passwd,name,nickname,sex,birth} = req.body;
+    const {id,passwd,name,nickname,gender,birth,grade,profile_url} = req.body;
 
-    if (!id || !passwd || !name) {
+
+    if (!id && !passwd && !name && !nickname && !gender && !birth && !grade && !profile_url ) {
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
     }
 
     const getMembershipQuery = "SELECT * FROM user WHERE id = ?";
     const getMembershipResult = await db.queryParam_Parse(getMembershipQuery, [id]);
+
 
 
     if(!getMembershipResult){//insert 실패
@@ -227,15 +232,15 @@ router.post('/signup', async (req, res) => {
         encrypt.getSalt(res, async (salt) => {
             encrypt.getHashedPassword(passwd, salt, res, async (hashedPassword) => {        
 
-                const insertMembershipQuery = "INSERT INTO user (id,name,nickname,sex,birth, passwd,salt) VALUES (?, ?, ?, ?,?,?,?)";
-                const insertMembershipResult = await db.queryParam_Parse(insertMembershipQuery, [id,name,nickname,sex,birth,hashedPassword,salt]);
+                const insertMembershipQuery = "INSERT INTO user (id,passwd,salt,name,nickname,gender,birth,grade,profile_url) VALUES (?, ?, ?, ?,?,?,?,?,?)";
+                const insertMembershipResult = await db.queryParam_Parse(insertMembershipQuery, [id,hashedPassword,salt,name,nickname,gender,birth,grade,profile_url]);
 
-
+                console.log(insertMembershipResult);
 
                 if (!insertMembershipResult) {
                     res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.MEMBERSHIP_INSERT_FAIL));
                 } else { //쿼리문이 성공했을 때
-                    res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.MEMBERSHIP_INSERT_SUCCESS));
+                    res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.MEMBERSHIP_INSERT_SUCCESS,[id,passwd,salt,name,nickname,gender,birth,grade,profile_url]));
                 }
             });
         });

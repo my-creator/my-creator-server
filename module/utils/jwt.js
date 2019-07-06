@@ -17,13 +17,12 @@ const refreshOptions = {
 
 module.exports = {
     sign: (user) => {
+
         const payload = {
-            user_idx: user[0].user_idx,
+            user_idx: user[0].idx,
             grade: user[0].grade,
             name: user[0].name
         };
-
-
         const result = {
             token: jwt.sign(payload, secretOrPrivateKey, options),
             refreshToken: randtoken.uid(256)

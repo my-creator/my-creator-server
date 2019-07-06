@@ -2,9 +2,9 @@
 //async/await 문법을 사용하기 위해서죠.
 //dbConfig 파일을 확인해주세요
 
-//const pool = require('../config/dbConfig');
+const pool = require('../config/dbConfig');
 
-const pool = require('../config/testdbConfig');
+//const pool = require('../config/testdbConfig');
 
 //const pool = require('../../config/db_config');
 

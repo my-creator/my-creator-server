@@ -12,18 +12,21 @@ const moment = require('moment');
 const authUtil = require('../../../module/utils/authUtils');
 const jwtUtil = require('../../../module/utils/jwt');
 
-
 //4. 크리에이터 프로필 조회
 //크리에이터명 프로필사진 크리에이터설명 카테고리(먹방2위)  즐겨찾는유저(팬게시판 좋아요) 구독자 누적조회수 
 //랭크 등급, 업적등급
 //팬게시판 여부
 //랭킹 경험치, 업적 경험치(마스터일땐 경험치 없다)
-//랭킹 이미지,업적 이미지
+//랭킹 이미지,업적 이미지!!!! 등급 이미지!!!!!!!!!!!
 //순위
+//카테고리 먹방 2위!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 router.get('/:creatorIdx', async (req, res) => {
     const { creatorIdx } = req.params;
 
-    const getCreatorPrifileQuery = "SELECT c.*,h.name AS '카테고리', bc.creator_idx AS '게시판 여부' FROM (( (creator c LEFT OUTER JOIN creator_category cc ON c.idx = cc.creator_idx) LEFT OUTER JOIN hashtag h ON h.idx = cc.hashtag_idx) LEFT OUTER JOIN board_creator bc ON bc.creator_idx = c.idx) WHERE c.idx = ?";
+    const getCreatorPrifileQuery = `SELECT c.*,h.name AS 'category', bc.creator_idx AS 'is_board' 
+    FROM (( (creator c INNER JOIN creator_category cc ON c.idx = cc.creator_idx) 
+    INNER JOIN hashtag h ON h.idx = cc.hashtag_idx)
+    INNER JOIN board_creator bc ON bc.creator_idx = c.idx) WHERE c.idx = ?`;
     const getCreatorPrifileResult = await db.queryParam_Parse(getCreatorPrifileQuery, [creatorIdx]);
 
     if (!getCreatorPrifileResult) {
@@ -41,10 +44,13 @@ router.get('/:creatorIdx', async (req, res) => {
 //192명 참여
 //스탯5개
 
-router.get('/:creatorIdx', async (req, res) => {
+router.get('/stat/:creatorIdx', async (req, res) => {
     const { creatorIdx } = req.params;
 
-    const getCreatorPrifileQuery = "SELECT cs.idx,cs.creator_idx,COUNT(cs.user_idx) AS'스탯 등록 참여자 수',AVG(cs.stat1) AS'스탯1 평균',AVG(cs.stat2)AS'스탯2 평균',AVG(cs.stat3)AS'스탯3 평균',AVG(cs.stat4)AS'스탯4 평균',AVG(cs.stat5)AS'스탯5 평균'FROM creator_stat cs WHERE cs.creator_idx = ?"
+    const getCreatorPrifileQuery = `SELECT cs.idx,cs.creator_idx,
+    COUNT(cs.user_idx) AS'stat_vote_cnt',AVG(cs.stat1) AS'stat1',AVG(cs.stat2)AS'stat2',AVG(cs.stat3)AS'stat3',
+    AVG(cs.stat4)AS'stat4',AVG(cs.stat5)AS'stat5'
+    FROM creator_stat cs WHERE cs.creator_idx = `;
     const getCreatorPrifileResult = await db.queryParam_Parse(getCreatorPrifileQuery, [creatorIdx]);
 
     if (!getCreatorPrifileResult) {
@@ -56,11 +62,15 @@ router.get('/:creatorIdx', async (req, res) => {
 
 
 //크리에이터 프로필의 스탯 등록(능력평점 참여)
-//미입력시 미입력나오게?
+//5개 중 하나라도 미입력시 미입력나오게!!!!!!
 //크리에이터 설명 해시태그 #먹방 #대식가는 나중에
-//스탯 등록하지 않으면..?
 //크리에이터 프로필의 스탯 등록 (해쉬태그 등록)
-//해쉬태그 설명
+//해쉬태그 설명!!!!!!!!!!! 단어 하나!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+
+
 
 
 
@@ -82,54 +92,6 @@ router.get('/:creatorIdx/popularvideo', async (req, res) => {
     }
 });
 
-
-// // //6 -1). 첫화면 실시간 핫크리에이터 조회 (1 ~ 10위)  => 상승세 기준 : 랭킹 (ex)7위에서 4위되면 상승
-// router.get('/hot', async (req, res) => {
-//     // SELECT empno, ename, sal,  
-//     //  DENSE_RANK() OVER (ORDER BY sal DESC ) as rk
-//     //  FROM emp;
-//     // const getHotCreatorsQuery = "SELECT * FROM creator WHERE idx = ? ORDER BY view_cnt DESC";
-//     const getHotCreatorsQuery = "SELECT  FROM creator WHERE idx = ? ORDER BY view_cnt DESC";
-//     const getHotCreatorsResult = await db.queryParam_Parse(getHotCreatorsQuery);
-
-//     if (!getHotCreatorsResult) {
-//         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_HOT_SELECT_ERROR));
-//     } else {
-//         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_HOT_SELECT_SUCCESS, getHotCreatorsResult));
-//     }
-// });
-
-// //6 -2). 첫화면 실시간 핫크리에이터 조회 시 뜨는 화살표/검색수 숫자
-//today_rank yesterday_rank 비교하면 됨.
-// router.get('/hot', async (req, res) => {
-//     // SELECT empno, ename, sal,  
-//     //  DENSE_RANK() OVER (ORDER BY sal DESC ) as rk
-//     //  FROM emp;
-//     // const getHotCreatorsQuery = "SELECT * FROM creator WHERE idx = ? ORDER BY view_cnt DESC";
-//     const getHotCreatorsQuery = "SELECT * FROM creator WHERE idx = ? ORDER BY view_cnt DESC";
-//     const getHotCreatorsResult = await db.queryParam_Parse(getHotCreatorsQuery);
-
-//     if (!getHotCreatorsResult) {
-//         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_HOT_SELECT_ERROR));
-//     } else {
-//         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_HOT_SELECT_SUCCESS, getHotCreatorsResult));
-//     }
-// });
-
-// //6 -3). 첫화면 실시간 핫크리에이터 조회 밑에 트래픽 시간 조회
-// router.get('/hot', async (req, res) => {
-//     // SELECT empno, ename, sal,  
-//     //  DENSE_RANK() OVER (ORDER BY sal DESC ) as rk
-//     //  FROM emp;
-//     const getHotCreatorsQuery = "SELECT * FROM creator WHERE idx = ? ORDER BY view_cnt DESC";
-//     const getHotCreatorsResult = await db.queryParam_Parse(getHotCreatorsQuery);
-
-//     if (!getHotCreatorsResult) {
-//         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_HOT_SELECT_ERROR));
-//     } else {
-//         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_HOT_SELECT_SUCCESS, getHotCreatorsResult));
-//     }
-// });
 
 //7. 구독자수별 차트 조회 ok
 router.get('/famous', async (req, res) => {
@@ -173,6 +135,7 @@ router.get('/search', async (req, res) => {
 
 
 //10. 해시태그별 크리에이터 목록 조회  ok
+//수정!!!!!!!!!!!!!!!!!!!!!!!!!!
 router.get('/search/hashtag', async (req, res) => {
     const { hashtag } = req.query;
 
@@ -199,6 +162,8 @@ router.get('/search/hashtag', async (req, res) => {
 
 
 // //11. 카테고리별 크리에이터 목록 조회 ok 
+//수정!!!!!!!!!!!!!!!!!!!!!!!!!!
+// // *** authUtil.isAdmin 추가해야함.!!!!!!!!!!!!!!!!!!!!!!!!!
 router.get('/search/category', async (req, res) => {
     const { category } = req.query;
 
@@ -225,7 +190,7 @@ router.get('/search/category', async (req, res) => {
 
 
 // //12. 크리에이터 해시태그 추가 -> test해야함
-// // *** authUtil.isAdmin 추가해야함.
+// // *** authUtil.isAdmin 추가해야함.!!!!!!!!!!!!!!!!!!!!!!!!!
 router.post('/:creatorIdx/hashtag/:hashtagIdx', (req, res) => {
     const { creatorIdx, hashtagIdx } = req.params;
 
@@ -243,7 +208,8 @@ router.post('/:creatorIdx/hashtag/:hashtagIdx', (req, res) => {
 //CREATOR_HASHTAG_DELETE_SUCCESS
 
 // //13. 크리에이터 해시태그 삭제 -> test해야함
-// // *** authUtil.isAdmin 추가해야함.
+// // *** authUtil.isAdmin 추가해야함.!!!!!!!!!!!!!!!!!!!!!!!!!
+//아무것도 삭제되지 않았을 경우 메시지 보내기!!!!1
 router.delete('/:creatorIdx/hashtag/:hashtagIdx', async (req, res) => {
     const { creatorIdx, hashtagIdx } = req.params;
     const params = [creatorIdx, hashtagIdx];
@@ -259,7 +225,7 @@ router.delete('/:creatorIdx/hashtag/:hashtagIdx', async (req, res) => {
 });
 
 // //14. 크리에이터 카테고리 추가 -> test해야함
-// // *** authUtil.isAdmin 추가해야함.
+// // *** authUtil.isAdmin 추가해야함.!!!!!!!!!!!!!!!!!!!!!!!!!
 router.post('/:creatorIdx/category/:categoryIdx', (req, res) => {
     const { creatorIdx, categoryIdx } = req.params;
 
@@ -274,7 +240,7 @@ router.post('/:creatorIdx/category/:categoryIdx', (req, res) => {
 });
 
 // //15. 크리에이터 카테고리 삭제 -> test해야함
-// // *** authUtil.isAdmin 추가해야함.
+// // *** authUtil.isAdmin 추가해야함.!!!!!!!!!!!!!!!!!!
 router.delete('/:creatorIdx/category/:categoryIdx', async(req, res) => {
     const { creatorIdx, categoryIdx } = req.params;
     const params = [creatorIdx, categoryIdx];

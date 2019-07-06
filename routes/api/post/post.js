@@ -14,7 +14,14 @@ const jwtUtil = require('../../../module/utils/jwt');
 
 //게시판별 게시글 리스트 조회(수정중)
 //인기글은 HOT배너//좋아요수 기준
-//썸네일(기본/게시글 속 사진), 제목, 등록유저,게시판이름,게시글 등록 시간                                                           
+//썸네일(기본/게시글 속 사진), 제목, 등록유저,게시판이름,게시글 등록 시간        
+//익명!!!!!!!!!!!!!!!!!!!!!               
+//NOT IN, NOT EXIST!!!!!!!!!!!!!!!!!!!!!!!!!!!                      
+//인기글 가져오는 API , 나머지 최신글 API 2개로 나누기!!!!!!!!!!!!!!
+//썸네일!!!!!!!!!!!!!!!!!!!!!!보류!!!!!!!!!!!!!!!!!!!!
+//이미지 썸네일 = POST MEDIA잇는지 확인하고 이미지 잇으면, 첫 이미지  URL
+//동영상인지 아닌지 
+//IMAGE_CNT, VIDEO_CNT              
 router.get('/board/:boardIdx', async (req, res) => {
  const boardIdx = req.params.boardIdx;
 let getPosthotQuery  = "SELECT * FROM post WHERE board_idx = ? ORDER BY like_cnt LIMIT 3";//인기글 1로 나머지 다 0으로 / 시간 순서 최신순이 위에 
@@ -28,7 +35,9 @@ let getPosthotQuery  = "SELECT * FROM post WHERE board_idx = ? ORDER BY like_cnt
     console.log("s\n");
     
         console.log(results); //resultId에 해당하는 부분만 가져옴
-        let getPostQuery  = "SELECT * FROM post WHERE board_idx = ? AND NOT EXISTS (SELECT idx FROM post WHERE board_idx = ? ORDER BY like_cnt limit 3)order by create_time";
+        let getPostQuery  = `SELECT * FROM post 
+        WHERE board_idx = ? AND NOT EXISTS (SELECT idx FROM post WHERE board_idx = ? 
+        ORDER BY like_cnt limit 3)order by create_time`;
         const getPostResult = await db.queryParam_Parse(getPostQuery,boardIdx);
         results.push()
 
@@ -44,11 +53,18 @@ let getPosthotQuery  = "SELECT * FROM post WHERE board_idx = ? ORDER BY like_cnt
 
 //게시글 상세 조회 다~ 성공
 //게시글 등록한 USER_IDX로 USER 섬네일,닉네임 = 유저에 썸네일 컬럼 추가, id / 유저가 익명인 경우도 있음 
-//몇조 전,조회수,익명,사진,제목,내용,댓글 수
-
+//몇조 전,조회수,익명,사진,제목,내용,
+// 댓글 수
+//익명!!!!!!!!!!!!!!!!!!!!!
+//게시글 썸네일!!!!!!!!!!!!!!!!!!!!!!!!!!
 router.get('/detail/:postIdx', async (req, res) => {
  const {postIdx} = req.params;
-    let getPostQuery  = `SELECT p.*, u.id,u.nickname,u.thumbnail,COUNT(r.idx) AS '댓글수' FROM( (  post p LEFT OUTER JOIN user u ON u.idx = p.user_idx) LEFT OUTER JOIN reply r on r.user_idx =  u.idx AND r.post_idx = p.idx) WHERE p.idx = ?`;
+    let getPostQuery  = `SELECT p.*, u.id, u.nickname, u.thumbnail FROM post p 
+    INNER JOIN user u ON u.idx = p.user_idx 
+    WHERE p.idx = ?`;
+
+// , COUNT(r.idx) AS '댓글수'
+//        INNER JOIN reply r on r.user_idx =  u.idx AND r.post_idx = p.idx 
 
     //creaatetime viewcnt user_idx(업ㅅ는경우)
     //userdb에 썸네일 추가
@@ -65,7 +81,12 @@ router.get('/detail/:postIdx', async (req, res) => {
 //썸네일 추가해야함
 
 router.get('/new', async (req, res) => { 
-    let getPostByCreateTimeQuery= "SELECT p.*,b.name,pm.media_url,COUNT(r.idx) FROM (( (  post p LEFT OUTER JOIN board b ON b.idx = p.board_idx) LEFT OUTER JOIN reply r ON r.post_idx = p.idx) LEFT OUTER JOIN post_media pm ON pm.post_idx = p.idx) GROUP BY p.idx ORDER BY p.create_time DESC LIMIT 5";  
+    let getPostByCreateTimeQuery= `SELECT p.*,b.name,pm.media_url,COUNT(r.idx) 
+    FROM (( (  post p INNER JOIN board b ON b.idx = p.board_idx) 
+    INNER JOIN reply r ON r.post_idx = p.idx) 
+    INNER JOIN post_media pm ON pm.post_idx = p.idx) 
+    GROUP BY p.idx 
+    ORDER BY p.create_time DESC LIMIT 5`;  
     
     const getPostByCreateTimeResult = await db.queryParam_None(getPostByCreateTimeQuery);
 
@@ -83,12 +104,15 @@ router.get('/new', async (req, res) => {
 //5개만 -> 더보기하면?
 //제목추천수,댓글수,등록시간
 //썸네일,게시판명,
-
 //썸네일 추가해야함
-
+//익명!!!!!!!!!!!!!!!!!!!!!
 router.get('/hot', async (req, res) => { 
 //post글 board_idx  = board idx name -> 
-    let getPostByHotQuery= "SELECT p.*,b.name,pm.media_url,COUNT(r.idx) FROM (( (  post p LEFT OUTER JOIN board b ON b.idx = p.board_idx) LEFT OUTER JOIN reply r ON r.post_idx = p.idx) LEFT OUTER JOIN post_media pm ON pm.post_idx = p.idx) GROUP BY p.idx ORDER BY p.like_cnt DESC LIMIT 5";  
+    let getPostByHotQuery= `SELECT p.*,b.name,pm.media_url,COUNT(r.idx) 
+    FROM (( (  post p INNER JOIN board b ON b.idx = p.board_idx) 
+    INNER JOIN reply r ON r.post_idx = p.idx) 
+    INNER JOIN post_media pm ON pm.post_idx = p.idx) 
+    GROUP BY p.idx ORDER BY p.like_cnt DESC LIMIT 5`;  
     
     const getPostByHotResult = await db.queryParam_None(getPostByHotQuery);
 
@@ -105,10 +129,13 @@ router.get('/hot', async (req, res) => {
 //제목,이름,게시판,썸네일,시간(int)
 //년,월,일,시간(초빼고)
 //시간 형식
-
+//익명!!!!!!!!!!!!!!!!!!!!!
 //썸네일 추가해야함
 router.get('/allhot', async (req, res) => { 
-    let getPostByCreateTimeQuery = "SELECT p.*,b.*,pm.media_url FROM (( post p LEFT OUTER JOIN board b ON b.idx = p.board_idx) LEFT OUTER JOIN post_media pm ON pm.post_idx = p.idx) GROUP BY p.idx ORDER BY p.like_cnt DESC";
+    let getPostByCreateTimeQuery = `SELECT p.*,b.*,pm.media_url 
+    FROM (( post p INNER JOIN board b ON b.idx = p.board_idx) 
+    INNER JOIN post_media pm ON pm.post_idx = p.idx) 
+    GROUP BY p.idx ORDER BY p.like_cnt DESC`;
     const getPostByCreateTimeResult = await db.queryParam_None(getPostByCreateTimeQuery);
 
     //쿼리문의 결과가 실패이면 null을 반환한다
@@ -126,8 +153,12 @@ router.get('/allhot', async (req, res) => {
 //년,월,일,시간(초빼고)
 //join union빼고!!
 //중복 제거하기!!
+//익명!!!!!!!!!!!!!!!!!!!!!
 router.get('/allnew', async (req, res) => { 
-    let getPostByCreateTimeQuery = "SELECT p.*,b.*,pm.media_url FROM (( post p LEFT OUTER JOIN board b ON b.idx = p.board_idx) LEFT OUTER JOIN post_media pm ON pm.post_idx = p.idx) GROUP BY p.idx ORDER BY p.create_time DESC";
+    let getPostByCreateTimeQuery = `SELECT p.*,b.*,pm.media_url 
+    FROM (( post p INNER JOIN board b ON b.idx = p.board_idx) 
+    INNER JOIN post_media pm ON pm.post_idx = p.idx) 
+    GROUP BY p.idx ORDER BY p.create_time DESC`;
 
     const getPostByCreateTimeResult = await db.queryParam_None(getPostByCreateTimeQuery);
 
@@ -143,10 +174,17 @@ router.get('/allnew', async (req, res) => {
 //첫화면 오늘 뜨는 인기글 조회(3개)성공
 //썸네일 
 //정각 기준으로 작성한 글에서 추천수 많은 수로 인기글 순위 매김.  오늘 뜨는 인기글에서 더보기 누르면 인기글로 넘어감.
-//좋아요수많은 거 
+//좋아요수많은 거
+//익명!!!!!!!!!!!!!!!!!!!!! 
 router.get('/todayhot', async (req, res) => {
 
-    let getTodayHotPostQuery  = "SELECT p.*,b.name,pm.media_url,COUNT(r.idx) AS '댓글수' FROM (( (  post p LEFT OUTER JOIN board b ON b.idx = p.board_idx) LEFT OUTER JOIN reply r ON r.post_idx = p.idx) LEFT OUTER JOIN post_media pm ON pm.post_idx = p.idx) WHERE p.create_time >= CURDATE() GROUP BY p.idx ORDER BY p.like_cnt DESC LIMIT 3";
+    let getTodayHotPostQuery  = `SELECT p.*,b.name,pm.media_url,COUNT(r.idx) AS '댓글수' 
+    FROM (( (  post p INNER JOIN board b ON b.idx = p.board_idx) 
+    INNER JOIN reply r ON r.post_idx = p.idx) 
+    INNER JOIN post_media pm ON pm.post_idx = p.idx) 
+    WHERE p.create_time >= CURDATE() 
+    GROUP BY p.idx 
+    ORDER BY p.like_cnt DESC LIMIT 3`;
     let getTodayHotPostResult = await db.queryParam_None(getTodayHotPostQuery);
     //쿼리문의 결과가 실패이면 null을 반환한다
     if (!getTodayHotPostResult) { //쿼리문이 실패했을 때
@@ -159,9 +197,16 @@ router.get('/todayhot', async (req, res) => {
 });
 
 //첫화면 방금 막 올라온 최신글 조회(3개)성공
+//익명!!!!!!!!!!!!!!!!!!!!!
 router.get('/todaynew', async (req, res) => {
 
-    let getTodayHotPostQuery  = "SELECT p.*,b.name,pm.media_url,COUNT(r.idx) AS '댓글수' FROM (( (  post p LEFT OUTER JOIN board b ON b.idx = p.board_idx) LEFT OUTER JOIN reply r ON r.post_idx = p.idx) LEFT OUTER JOIN post_media pm ON pm.post_idx = p.idx) WHERE p.create_time >= CURDATE() GROUP BY p.idx ORDER BY p.create_time DESC LIMIT 3";
+    let getTodayHotPostQuery  = `SELECT p.*,b.name,pm.media_url,COUNT(r.idx) AS '댓글수' 
+    FROM (( (  post p INNER JOIN board b ON b.idx = p.board_idx) 
+    INNER JOIN reply r ON r.post_idx = p.idx) 
+    INNER JOIN post_media pm ON pm.post_idx = p.idx) 
+    WHERE p.create_time >= CURDATE() 
+    GROUP BY p.idx 
+    ORDER BY p.create_time DESC LIMIT 3`;
     let getTodayHotPostResult = await db.queryParam_None(getTodayHotPostQuery);
     //쿼리문의 결과가 실패이면 null을 반환한다
     if (!getTodayHotPostResult) { //쿼리문이 실패했을 때
@@ -177,16 +222,18 @@ router.get('/todaynew', async (req, res) => {
 
 
 //게시글 내용,제목 검색
-//한글도 되게 해야함
+
 //localhost:3000/api/posts/search?title=free&contents=category
+//검색어가 너무 짧습니다 뜨는 경우!!!!!!!!!!!!!!!!!!
 router.get('/search', async (req, res) => {
  let {title, contents} = req.query;
 
+    console.log(title);
 
     let getBoardSearchQuery  = "SELECT * FROM post WHERE"
-    if(title) getBoardSearchQuery+= ` title = '${title}'`;
-    if(title && contents) getBoardSearchQuery+= ` AND`;
-    if(contents) getBoardSearchQuery+= ` contents = '${contents}',`;
+    if(title) getBoardSearchQuery+= ` title LIKE '%${title}%'`;
+    if(title && contents) getBoardSearchQuery+= ` OR`;
+    if(contents) getBoardSearchQuery+= ` contents LIKE '%${contents}%',`;
 
     getBoardSearchQuery = getBoardSearchQuery.slice(0, getBoardSearchQuery.length-1);
 
@@ -340,7 +387,7 @@ router.delete(':/postIdx/unhate', authUtil.isLoggedin, async(req, res) => {
 
 // 게시글 생성
 //이미지,동영상,움짤 최대 10개
-//익명인지 체크
+//익명인지 체크!!!!!!!!!!!!!!!!!!!!!!!
 router.post('/', authUtil.isLoggedin, upload.array('imgs'), async (req, res) => {
     const {boardIdx,title,contents} = req.body;
     const userIdx = req.decoded.user_idx;
@@ -358,6 +405,9 @@ router.post('/', authUtil.isLoggedin, upload.array('imgs'), async (req, res) => 
     let postPostQuery = "INSERT INTO post(board_idx, user_idx, title, contents,create_time) VALUES(?, ?, ?,?,?)";
     let postPostResult  = await db.queryParam_Parse(postPostQuery, [boardIdx,userIdx,title,contents,createTime]);
 
+    console.log('#########');
+    console.log(postPostResult);
+    console.log('#########');
 
     if (!postPostResult) { //쿼리문이 실패했을 때
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_POST_ERROR));
@@ -372,11 +422,10 @@ router.post('/', authUtil.isLoggedin, upload.array('imgs'), async (req, res) => 
     let post_idx = JSON.parse(JSON.stringify(getPostidxResult[0]));
     post_idx = post_idx[0].idx;
 
-//너무 느려서 고쳐야함.
     for (let i = 0; i < imgUrl.length; i++) {
 
         let mimeType = '';
-        console.log("test1\n");ㅜ
+        console.log("test1\n");
         console.log(imgUrl[i].mimetype);
         switch (imgUrl[i].mimetype) {
           case "image/jpeg":
@@ -420,6 +469,7 @@ router.post('/', authUtil.isLoggedin, upload.array('imgs'), async (req, res) => 
 
 
 // 게시글 수정
+//익명!!!!!!!!!!!!!!!!!!!!!
 router.put('/:postIdx', authUtil.isLoggedin, upload.array('imgs'),async(req, res) => {
     const postIdx = req.params.postIdx;
 
