@@ -11,8 +11,7 @@ const moment = require('moment');
 const jwtUtil = require('../../../module/utils/jwt');
 
 // // 1. 크리에이터 생성   ok
-// // *** authUtil.isAdmin 추가해야함
-router.post('/', upload.single('img'),  (req, res) => {
+router.post('/', authUtil.isAdmin, upload.single('img'),  (req, res) => {
     const {name, followerCnt, viewCnt, contents, followerCntGrade, viewCntGrade} = req.body;
     const profileUrl = req.file.location;
     const params = [name, profileUrl, followerCnt, viewCnt, contents, followerCntGrade, viewCntGrade];
@@ -32,9 +31,8 @@ router.post('/', upload.single('img'),  (req, res) => {
 });
 
 
-// //2. 크리에이터 수정  ok
-// // *** authUtil.isAdmin 추가해야함.
-router.put('/:creatorIdx',  upload.single('img'), (req, res) => {
+//2. 크리에이터 수정  ok
+router.put('/:creatorIdx', authUtil.isAdmin,  upload.single('img'), (req, res) => {
     const {creatorIdx} = req.params;
     const {name,followerCnt, viewCnt, contents, followerCntGrade, viewCntGrade} = req.body;
     const profileUrl = req.file.location;
@@ -72,8 +70,7 @@ router.put('/:creatorIdx',  upload.single('img'), (req, res) => {
 
 
 // // 3. 크리에이터 삭제  ok
-// // *** authUtil.isAdmin 추가해야함.
-router.delete('/:creatorIdx', async(req, res) => {
+router.delete('/:creatorIdx', authUtil.isAdmin, async(req, res) => {
     const {creatorIdx} = req.params;
 
     const deleteCreatorQuery = "DELETE FROM creator WHERE idx = ?";
@@ -86,32 +83,34 @@ router.delete('/:creatorIdx', async(req, res) => {
     }
 });
 
-//4. 크리에이터 프로필 조회 -->DB수정돼서 DB변경 후 다시 코드 작성 후 test해봐야함.
-//current_rank, last_rank, search_cnt빼고 다시 작성
-router.get('/:creatorIdx', async (req, res) => {
-    const { creatorIdx } = req.params;
 
-    const getCreatorProfileQuery = "SELECT (name, profile_url, follower_cnt, view_cnt, search_cnt, like_user_cnt, contents, follow_cnt_grade, view_cnt_grade) FROM creator WHERE idx = ?";
-    const getCreatorProfileResult = await db.queryParam_Parse(getCreatorProfileQuery, [creatorIdx]);
-
-    if (!getCreatorProfileResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_PROFILE_ERROR));
-    } else {
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_SELECT_PROFILE_SUCCESS, getCreatorProfileResult));
-    }
-});
-
-//5. 크리에이터 인기 영상 조회  -> ok
+//4. 크리에이터 대표 영상 조회     -----> test해야함
+//view_cnt 기준으로 정렬 DESC
 router.get('/:creatorIdx/popularvideo', async (req, res) => {
     const { creatorIdx } = req.params;
 
-    const getPopularVideoQuery = "SELECT * FROM popular_video WHERE creator_idx = ?";
+    const getPopularVideoQuery = "SELECT * FROM video WHERE creator_idx = ? ORDER BY view_cnt DESC";
     const getPopularVideoResult = await db.queryParam_Parse(getPopularVideoQuery, [creatorIdx]);
 
     if (!getPopularVideoResult) {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_POPULARVIDEO_SELECT_ERROR));
     } else {
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_POPULARVIDEO_SELECT_SUCCESS, getPopularVideoResult));
+    }
+});
+
+//5. 크리에이터 최신 영상 조회      -----> test해야함
+//create_time기준으로 정렬 DESC
+router.get('/:creatorIdx/newvideo', async (req, res) => {
+    const { creatorIdx } = req.params;
+
+    const getPopularVideoQuery = "SELECT * FROM video WHERE creator_idx = ? ORDER BY create_time DESC";
+    const getPopularVideoResult = await db.queryParam_Parse(getPopularVideoQuery, [creatorIdx]);
+
+    if (!getPopularVideoResult) {
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_NEWVIDEO_SELECT_ERROR));
+    } else {
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_NEWVIDEO_SELECT_SUCCESS, getPopularVideoResult));
     }
 });
 
@@ -130,7 +129,7 @@ router.get('/:creatorIdx/popularvideo', async (req, res) => {
 // });
 
 
-//7. 구독자수별 차트 조회 ok
+//참고 구독자수별 차트 조회 ok
 router.get('/famous', async (req, res) => {
     const getFollowerQuery = "SELECT idx FROM creator ORDER BY follower_cnt DESC";
     const getFollowerResult = await db.queryParam_Parse(getFollowerQuery);
@@ -142,19 +141,45 @@ router.get('/famous', async (req, res) => {
     }
 });
 
-//8. 특정 크리에이터 구독자수 조회 ok
-router.get('/followers/:creatorIdx', async (req, res) => {
-    const { creatorIdx } = req.params;
+//6. 카테고리별 크리에이터 구독자수 랭킹
+// 1. 카테고리  구분
+// 2.그거에 해당하는 구독자수
 
-    const getCreatorFollowerQuery = "SELECT follower_cnt FROM creator WHERE idx = ?";
-    const getCreatorFollowerResult = await db.queryParam_Parse(getCreatorFollowerQuery, [creatorIdx]);
+router.get('/category/view/rank', async (req, res) => {
+    const { category } = req.query;
 
-    if (!getCreatorFollowerResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_FOLLOWER_SELECT_ERROR));
+    const getCategoryIdxQuery = `SELECT idx FROM hashtag WHERE name = ${category}`;
+    const getCategoryIdxResult = await db.queryParam_None(getCategoryIdxQuery);
+
+    const GetCategoryIdx = getCategoryIdxResult[0].name;
+
+    if (!getCategoryIdxResult) {
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CATEGORY_SELECT_ERROR));
     } else {
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_FOLLOWER_SELECT_SUCCESS, getCreatorFollowerResult));
+        const getCreatorCategoryQuery = "SELECT creator_idx FROM creator_category WHERE hashtag_idx = ?";
+        const getCreatorCategoryResult = await db.queryParam_Parse(getCreatorCategoryQuery, [GetCategoryIdx]);
+
+        if (!getCreatorCategoryResult) {
+            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_LIST_BY_CATEGORY_SELECT_ERROR));
+        } else {
+            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_LIST_BY_CATEGORY_SELECT_SUCCESS, getCreatorCategoryResult));
+        }
     }
 });
+
+//8. 특정 크리에이터 구독자수 조회 ok  ==> 우선 보류
+// router.get('/followers/:creatorIdx', async (req, res) => {
+//     const { creatorIdx } = req.params;
+
+//     const getCreatorFollowerQuery = "SELECT follower_cnt FROM creator WHERE idx = ?";
+//     const getCreatorFollowerResult = await db.queryParam_Parse(getCreatorFollowerQuery, [creatorIdx]);
+
+//     if (!getCreatorFollowerResult) {
+//         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_FOLLOWER_SELECT_ERROR));
+//     } else {
+//         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_FOLLOWER_SELECT_SUCCESS, getCreatorFollowerResult));
+//     }
+// });
 
 //9. 크리에이터 검색 ok
 router.get('/search', async (req, res) => {
@@ -162,6 +187,9 @@ router.get('/search', async (req, res) => {
 
     const getCreatorSearchQuery = "SELECT * FROM creator WHERE name = ?";
     const getCreatorSearchResult = await db.queryParam_Parse(getCreatorSearchQuery, [name]);
+
+// const getCreatorSearchQuery = "SELECT * FROM creator WHERE name LIKE %${name}%";
+// const getCreatorSearchResult = await db.queryParam_Parse(getCreatorSearchQuery);
 
     if (!getCreatorSearchResult) {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_LIST_BY_NAME_SELECT_ERROR));
@@ -171,7 +199,7 @@ router.get('/search', async (req, res) => {
 });
 
 
-//10. 해시태그별 크리에이터 목록 조회  ok
+//10. 해시태그별 크리에이터 목록 조회  ok  => 보류.....ㅠㅠㅠㅠㅠㅠㅠ
 router.get('/search/hashtag', async (req, res) => {
     const { hashtag } = req.query;
 
@@ -195,7 +223,7 @@ router.get('/search/hashtag', async (req, res) => {
 });
 
 
-// //11. 카테고리별 크리에이터 목록 조회 ok 
+// //11. 카테고리별 크리에이터 목록 조회 ok => 보류.....ㅠㅠㅠㅠㅠㅠㅠ
 router.get('/search/category', async (req, res) => {
     const { category } = req.query;
 
@@ -220,23 +248,28 @@ router.get('/search/category', async (req, res) => {
 
 
 // //12. 크리에이터 해시태그 추가 -> test해야함
-// // *** authUtil.isAdmin 추가해야함.
-router.post('/:creatorIdx/hashtag/:hashtagIdx', (req, res) => {
-    const { creatorIdx, hashtagIdx } = req.params;
+router.post('/:creatorIdx/hashtag', authUtil.isAdmin, async (req, res) => {
+    const { creatorIdx } = req.params;
+    const { hashtag } = req.body;
 
-    const postCreatorHashtagQuery = "INSERT INTO creator_hashtag (creator_idx, hashtag_idx) VALUES(?, ?)";
-    const postCreatorHashtagResult = db.queryParam_Parse(postCreatorHashtagQuery, [creatorIdx, hashtagIdx], function (result) {
-        if (!result) {
-            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_HASHTAG_INSERT_ERROR));
-        } else {
-            res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_HASHTAG_INSERT_SUCCESS));
-        }
-    });
+    const getCreatorHashtagQuery = "SELECT name FROM hashtag WHERE name = ? ";
+    const getCreatorHashtagResult = await db.queryParam_Parse(getCreatorHashtagQuery, hashtag);
+    if (!getCreatorHashtagResult) {
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.HASHTAG_SELECT_ERROR));
+    } else {
+        const postCreatorHashtagQuery = "INSERT INTO creator_hashtag (creator_idx, hashtag_idx) VALUES(?, ?)";
+        const postCreatorHashtagResult = db.queryParam_Parse(postCreatorHashtagQuery, [creatorIdx, hashtagIdx], function (result) {
+            if (!result) {
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_HASHTAG_INSERT_ERROR));
+            } else {
+                res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_HASHTAG_INSERT_SUCCESS));
+            }
+        });
+    }
 });
 
 // //13. 크리에이터 해시태그 삭제 -> test해야함
-// // *** authUtil.isAdmin 추가해야함.
-router.delete('/:creatorIdx/hashtag/:hashtagIdx', async (req, res) => {
+router.delete('/:creatorIdx/hashtag/:hashtagIdx', authUtil.isAdmin, async (req, res) => {
     const { creatorIdx, hashtagIdx } = req.params;
     const params = [creatorIdx, hashtagIdx];
 
@@ -251,8 +284,7 @@ router.delete('/:creatorIdx/hashtag/:hashtagIdx', async (req, res) => {
 });
 
 // //14. 크리에이터 카테고리 추가 -> test해야함
-// // *** authUtil.isAdmin 추가해야함.
-router.post('/:creatorIdx/category/:categoryIdx', (req, res) => {
+router.post('/:creatorIdx/category/:categoryIdx', authUtil.isAdmin, (req, res) => {
     const { creatorIdx, categoryIdx } = req.params;
 
     const postCreatorCategoryQuery = "INSERT INTO creator_hashtag (creator_idx, hashtag_idx) VALUES(?, ?)";
@@ -266,8 +298,7 @@ router.post('/:creatorIdx/category/:categoryIdx', (req, res) => {
 });
 
 // //15. 크리에이터 카테고리 삭제 -> test해야함
-// // *** authUtil.isAdmin 추가해야함.
-router.delete('/:creatorIdx/category/:categoryIdx', async(req, res) => {
+router.delete('/:creatorIdx/category/:categoryIdx', authUtil.isAdmin, async(req, res) => {
     const { creatorIdx, categoryIdx } = req.params;
     const params = [creatorIdx, categoryIdx];
 
