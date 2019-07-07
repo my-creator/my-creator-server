@@ -16,46 +16,121 @@ var urlencode = require('urlencode');
 var querystring = require('querystring');
 var url = require('url');
 
-// 에피소드 리스트 조회
-router.get('/webtoon/:webtoonIdx', async(req, res) => {
-    const {webtoonIdx} = req.params;
-    
-    const getEpisodeQuery = "SELECT * FROM episode WHERE webtoon_idx = ?";
-    const getEpisodeResult = await db.queryParam_Parse(getEpisodeQuery, [webtoonIdx]);
+// 진행중인 투표 조회
+router.get('/ings/newest', async(req, res) => {
+    const getVoteQuery = "SELECT * FROM vote WHERE start_time<=now() AND end_time>now() ORDER BY idx DESC LIMIT 1";
+    const getVoteResult = await db.queryParam_None(getVoteQuery);
+    const result = getVoteResult[0];
 
-    if (!getEpisodeResult) {
+    if (!result) {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
     } else {
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, getEpisodeResult));
-    }
-});
-
-// 에피소드 상세 조회
-router.get('/:episodeIdx', async(req, res) => {
-    const {episodeIdx} = req.params;
-
-    let result;
-    
-    const getEpisodeQuery = "SELECT * FROM episode WHERE episode_idx = ?";
-    const getEpisodeResult = await db.queryParam_Parse(getEpisodeQuery, [episodeIdx]);
-    result = getEpisodeResult;
-
-    const getCutsQuery = "SELECT img_url FROM cut WHERE episode_idx = ?";
-    const getCutsResult = await db.queryParam_Parse(getCutsQuery, [episodeIdx]);
-    
-    if (!getEpisodeResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
-    } else {
-        if(result.length > 0){
-            result[0].cuts = getCutsResult.map(e => e.img_url);
-            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, result[0]));
-        }else{ // 존재하지 않음
-            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_ERROR));
+        const getVoteChoiceQuery = "SELECT v.idx, vc.* FROM (SELECT * FROM vote WHERE idx = ?) v \
+        INNER JOIN vote_choice vc ON v.idx = vc.vote_idx";
+        const getVoteChoiceResult = await db.queryParam_Parse(getVoteChoiceQuery, [result[0].idx]);
+        choiceResult = getVoteChoiceResult[0];
+        if(!choiceResult){
+            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
+        }else{
+            result.forEach((vote, index, votes)=>{
+                result[index]["choices"] = [];
+                choiceResult.forEach((choice)=>{
+                    if(choice.vote_idx == vote.idx){
+                        result[index]["choices"].push(choice);
+                    }
+                });
+            });
         }
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, result));
     }
 });
 
-// 에피소드 생성
+// 진행중인 투표 목록 조회
+router.get('/ings', async(req, res) => {
+    const getVoteQuery = "SELECT * FROM vote WHERE start_time<=now() AND end_time>now() ORDER BY idx DESC;";
+    const getVoteResult = await db.queryParam_None(getVoteQuery);
+    const result = getVoteResult[0];
+
+    if (!result) {
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
+    } else {
+        let idxList;
+        if(result.length==0){
+            idxList = "(-1)";
+        }else{
+            idxList = "("
+            result.forEach((row, idx, array)=>{
+                idxList += row.idx;
+                if(idx !== array.length-1){
+                    idxList += ',';
+                }
+            });
+            idxList += ")";
+        }
+
+        const getVoteChoiceQuery = `SELECT v.idx, vc.* FROM (SELECT * FROM vote WHERE idx IN ${idxList}) v \
+        INNER JOIN vote_choice vc ON v.idx = vc.vote_idx`;
+        const getVoteChoiceResult = await db.queryParam_None(getVoteChoiceQuery);
+        choiceResult = getVoteChoiceResult[0];
+        if(!choiceResult){
+            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
+        }else{
+            result.forEach((vote, index, votes)=>{
+                result[index]["choices"] = [];
+                choiceResult.forEach((choice)=>{
+                    if(choice.vote_idx == vote.idx){
+                        result[index]["choices"].push(choice);
+                    }
+                });
+            });
+        }
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, result));
+    }
+});
+
+// 지난 투표 조회
+router.get('/lasts', async(req, res) => {
+    const getVoteQuery = "SELECT * FROM vote WHERE end_time <= now() ORDER BY idx DESC;";
+    const getVoteResult = await db.queryParam_None(getVoteQuery);
+    const result = getVoteResult[0];
+
+    if (!result) {
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
+    } else {
+        let idxList;
+        if(result.length==0){
+            idxList = "(-1)";
+        }else{
+            idxList = "("
+            result.forEach((row, idx, array)=>{
+                idxList += row.idx;
+                if(idx !== array.length-1){
+                    idxList += ',';
+                }
+            });
+            idxList += ")";
+        }
+        const getVoteChoiceQuery = `SELECT v.idx, vc.* FROM (SELECT * FROM vote WHERE idx IN ${idxList}) v \
+        INNER JOIN vote_choice vc ON v.idx = vc.vote_idx`;
+        const getVoteChoiceResult = await db.queryParam_None(getVoteChoiceQuery);
+        choiceResult = getVoteChoiceResult[0];
+        if(!choiceResult){
+            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
+        }else{
+            result.forEach((vote, index, votes)=>{
+                result[index]["choices"] = [];
+                choiceResult.forEach((choice)=>{
+                    if(choice.vote_idx == vote.idx){
+                        result[index]["choices"].push(choice);
+                    }
+                });
+            });
+        }
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, result));
+    }
+});
+
+// 투표 생성
 router.post('/', authUtil.isAdmin, upload.fields([{name: 'img'}, {name: 'cuts', maxCount:10}]), (req, res) => {
     const {webtoonIdx,title} = req.body;
 
