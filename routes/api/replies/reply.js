@@ -15,11 +15,9 @@ const jwtUtil = require('../../../module/utils/jwt');
 
 
 
-// 댓글 작성
-
-//익명!!!!!!!!!!!!!!!!!!!!!!!!!!
+// 댓글 작성 OKDK
 router.post('/', authUtil.isLoggedin, async(req, res) => {
-    const {postIdx,comments} = req.body;
+    const {postIdx,comments,is_anonymous} = req.body;
     const userIdx = req.decoded.user_idx;
 
 
@@ -34,8 +32,8 @@ router.post('/', authUtil.isLoggedin, async(req, res) => {
             res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.POSTS_SELECT_NOTHING + `: ${postIdx}`));
     }
     
-        const postCommentsQuery = "INSERT INTO reply(post_idx, user_idx, content,create_time) VALUES(?, ?, ?,CURDATE())";
-        const postCommentsResult = db.queryParam_Parse(postCommentsQuery, [postIdx,userIdx,comments], function(result){
+        const postCommentsQuery = "INSERT INTO reply(post_idx, user_idx, content,create_time,is_anonymous) VALUES(?, ?, ?,CURDATE(),?)";
+        const postCommentsResult = db.queryParam_Parse(postCommentsQuery, [postIdx,userIdx,comments,is_anonymous], function(result){
             if (!result) {
                 res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.COMMENT_INSERT_ERROR));
             } else {
