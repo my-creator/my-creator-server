@@ -78,8 +78,6 @@ router.delete('/:creatorIdx', authUtil.isAdmin, async (req, res) => {
     }
 });
 
-
-
 //4. 크리에이터 대표 영상 모두 조회 ok
 //view_cnt 기준으로 정렬 DESC
 router.get('/:creatorIdx/popularvideo/all', async (req, res) => {
@@ -126,7 +124,7 @@ router.get('/:creatorIdx/popularvideo/three', async (req, res) => {
 });
 
 //7. 크리에이터 최신영상 3개 조회  ok
-//create_time기준으로 정렬 DESC vs ASC
+//create_time기준으로 정렬 DESC
 router.get('/:creatorIdx/newvideo/three', async (req, res) => {
     const { creatorIdx } = req.params;
 
@@ -139,7 +137,6 @@ router.get('/:creatorIdx/newvideo/three', async (req, res) => {
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_NEWVIDEO_SELECT_SUCCESS, getPopularVideoResult[0]));
     }
 });
-
 
 //!!!랭킹부분 아직 작성 안함!!!!!!!!!!
 
@@ -196,8 +193,8 @@ router.get('/category/subscribe/rank', async (req, res) => {
 //     }
 // });
 
-//9. 크리에이터 검색 => 뷰보고 추가 수정해야함.
-router.get('/creatorSearch', async (req, res) => {
+//9. 크리에이터 검색 ok
+router.get('/creator/search', async (req, res) => {
     const { name } = req.query;
     const getCreatorSearchQuery = `SELECT * FROM creator WHERE name LIKE '%${name}%'`;
     const getCreatorSearchResult = await db.queryParam_Parse(getCreatorSearchQuery);
