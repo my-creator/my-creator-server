@@ -1,25 +1,17 @@
-
 var express = require('express');
 var router = express.Router();
 
-const upload = require('../../../config/multer');
 const defaultRes = require('../../../module/utils/utils');
 const statusCode = require('../../../module/utils/statusCode');
 const resMessage = require('../../../module/utils/responseMessage');
-const encrypt = require('../../../module/utils/encrypt');
 const db = require('../../../module/utils/pool');
-const moment = require('moment');
 const authUtil = require('../../../module/utils/authUtils');
-const jwtUtil = require('../../../module/utils/jwt');
 
-var urlencode = require('urlencode');
-var querystring = require('querystring');
-var url = require('url');
 
 
 // 카테고리 조회
 router.get('/', async (req, res) => {
-    const getCategoriesQuery = "SELECT * FROM category";
+    const getCategoriesQuery = "SELECT idx, name FROM category";
     const getCategoriesResult = await db.queryParam_Parse(getCategoriesQuery);
 
     if (!getCategoriesResult) {
@@ -32,11 +24,12 @@ router.get('/', async (req, res) => {
 
 //카테고리 생성
 router.post('/', authUtil.isAdmin, async (req, res) => {
-    const name = req.body;
+    const name = req.body.name;
+
     if (!name) {
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
     }
-    const postCategoriesQuery = 'INSERT INTO category name VALUES ?';
+    const postCategoriesQuery = 'INSERT INTO category (name) VALUES (?)';
     const postCategoriesResult = await db.queryParam_Parse(postCategoriesQuery, name);
 
     if (!postCategoriesResult) {
@@ -50,14 +43,18 @@ router.post('/', authUtil.isAdmin, async (req, res) => {
 // 카테고리 수정
 router.put('/:categoryIdx', authUtil.isAdmin, (req, res) => {
     const { categoryIdx } = req.params;
-    const name = req.body;
+    const name = req.body.name;
 
-    // categoryIdx 없으면 에러 응답
+    // categoryIdx, name 없으면 에러 응답
     if (!categoryIdx || !name) {
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
     }
-    const putCategoriesQuery = `UPDATE category SET name = ${name} WHERE idx = ${categoryIdx}`;
-    db.queryParam_Parse(putCategoriesQuery, function (result) {
+    let putCategoriesQuery = "UPDATE category SET ";
+    if (name) putCategoriesQuery += ` name = '${name}',`;
+    putCategoriesQuery = putCategoriesQuery.slice(0, putCategoriesQuery.length - 1);
+    putCategoriesQuery += " WHERE idx = ?";
+
+    db.queryParam_Parse(putCategoriesQuery, [categoryIdx], function (result) {
         if (!result) {
             res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CATEGORY_UPDATE_ERROR));
         } else {

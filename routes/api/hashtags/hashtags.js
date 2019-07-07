@@ -25,22 +25,6 @@ router.get('/', async (req, res) => {
 });
 
 
-// 해시태그 생성  ====> 필요 없음.
-router.post('/', authUtil.isAdmin,async(req, res) => {
-    const { name } = req.body;
-    if (!name) {
-        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
-    }
-    const postHashtagsQuery = 'INSERT INTO hashtag (name) VALUES (?)';
-    const postHashtagsResult = await db.queryParam_Parse(postHashtagsQuery, [name]);
-
-    if (!postHashtagsResult ) {
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.HASHTAG_INSERT_ERROR));
-    } else {
-        res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.HASHTAG_INSERT_SUCCESS));
-    };
-});
-
 
 // 해시태그 수정
 router.put('/:hashtagIdx', authUtil.isAdmin, (req, res) => {
@@ -51,8 +35,12 @@ router.put('/:hashtagIdx', authUtil.isAdmin, (req, res) => {
     if (!hashtagIdx || !name) {
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
     }
-    const putHashtagsQuery = `UPDATE hashtag SET name = ${name} WHERE idx = ${hashtagIdx}`;
-    db.queryParam_Parse(putHashtagsQuery, function (result) {
+    let putHashtagsQuery = "UPDATE hashtag SET ";
+    if (name) putHashtagsQuery += ` name = '${name}',`;
+    putHashtagsQuery = putHashtagsQuery.slice(0, putHashtagsQuery.length - 1);
+    putHashtagsQuery += " WHERE idx = ?";
+
+    db.queryParam_Parse(putHashtagsQuery, [hashtagIdx], function (result) {
         if (!result) {
             res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CATEGORY_UPDATE_ERROR));
         } else {
