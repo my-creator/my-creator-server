@@ -5,7 +5,7 @@ const youtube_config = require('../config/youtube_config');
 const baseUrl = youtube_config.BASE_URL;
 const apiKey = youtube_config.API_KEY;
 
-const selectCreatorQuery = "SELECT idx, name, channel_id FROM creator WHERE idx < 1850";
+const selectCreatorQuery = "SELECT idx, name, channel_id FROM creator";
 const selectCreatorsResult = db.queryParam_None(selectCreatorQuery)
     .then(result => {
         return result[0];
