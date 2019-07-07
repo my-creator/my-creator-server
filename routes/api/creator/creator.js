@@ -115,17 +115,20 @@ router.get('/:creatorIdx/newvideo', async (req, res) => {
 
 
 //희찬오빠가
-// // //6. 첫화면 실시간 핫크리에이터 조회 (1 ~ 10위)  => 상승세 기준 : 랭킹 (ex)7위에서 4위되면 상승
-// router.get('/hot', async (req, res) => {
-//     const getHotCreatorsQuery = "";
-//     const getHotCreatorsResult = await db.queryParam_Parse(getHotCreatorsQuery);
+// //6. 첫화면 실시간 핫크리에이터 조회 (1 ~ 10위)  => 상승세 기준 : 랭킹 (ex)7위에서 4위되면 상승
+router.get('/chart/hot', async (req, res) => {
+    const getHotCreatorsQuery = "SELECT c.*, cs.cnt \
+    FROM creator c \
+        INNER JOIN (SELECT creator_idx, COUNT(*) AS cnt FROM creator_search WHERE NOW() >= date_add(now(), interval -1 day) GROUP BY creator_idx) cs ON c.idx = cs.creator_idx\
+    ORDER BY cs.cnt DESC LIMIT 0, 10; ";
+    const getHotCreatorsResult = await db.queryParam_None(getHotCreatorsQuery);
 
-//     if (!getHotCreatorsResult) {
-//         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_HOT_SELECT_ERROR));
-//     } else {
-//         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_HOT_SELECT_SUCCESS, getHotCreatorsResult));
-//     }
-// });
+    if (!getHotCreatorsResult) {
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_HOT_SELECT_ERROR));
+    } else {
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_HOT_SELECT_SUCCESS, getHotCreatorsResult[0]));
+    }
+});
 
 
 //참고 구독자수별 차트 조회 ok
@@ -133,6 +136,7 @@ router.get('/famous', async (req, res) => {
     const getFollowerQuery = "SELECT idx FROM creator ORDER BY follower_cnt DESC";
     const getFollowerResult = await db.queryParam_Parse(getFollowerQuery);
 
+    console.log("famoussssssssssss")
     if (!getFollowerResult) {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.FOLLOWER_SELECT_ERROR));
     } else {
@@ -181,7 +185,7 @@ router.get('/category/view/rank', async (req, res) => {
 // });
 
 //9. 크리에이터 검색 ok
-router.get('/search', async (req, res) => {
+router.get('/creator/search', async (req, res) => {
     const { name } = req.query;
 
     const getCreatorSearchQuery = "SELECT * FROM creator WHERE name = ?";

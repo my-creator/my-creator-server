@@ -63,3 +63,7 @@ typings/
 # Config
 **/*config.js
 config/
+
+# Youtube_link
+./youtub_*
+./youtub_link.json
