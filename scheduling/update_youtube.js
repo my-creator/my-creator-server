@@ -5,7 +5,7 @@ const youtube_config = require('../config/youtube_config');
 const baseUrl = youtube_config.BASE_URL;
 const apiKey = youtube_config.API_KEY;
 
-const selectCreatorQuery = "SELECT idx, name, channel_id FROM creator";
+const selectCreatorQuery = "SELECT idx, name, channel_id FROM creator WHERE idx < 1850";
 const selectCreatorsResult = db.queryParam_None(selectCreatorQuery)
     .then(result => {
         return result[0];
@@ -42,17 +42,19 @@ function update(snippet, statistics, idx){
     const {viewCount, subscriberCount, videoCount} = statistics;
     const thumbnail = thumbnails.medium.url;
     const createTime = publishedAt.replace('Z','');
-    const params = [title, description, createTime, viewCount, subscriberCount, idx];
+    const params = [title, description, createTime, viewCount, subscriberCount, viewCount, subscriberCount, idx];
 
     console.log(title);
-    console.log(description);
-    console.log(createTime);
-    console.log(thumbnail);
-    console.log(viewCount);
-    console.log(subscriberCount);
-    console.log(videoCount);
+    // console.log(description);
+    // console.log(createTime);
+    // console.log(thumbnail);
+    // console.log(viewCount);
+    // console.log(subscriberCount);
+    // console.log(videoCount);
 
-    const updateCreatorQuery = "UPDATE creator SET name=?, contents=?, create_time=?, youtube_view_cnt=?, youtube_subscriber_cnt=?\
+    const updateCreatorQuery = "UPDATE creator SET name=?, contents=?, create_time=?, youtube_view_cnt=?, youtube_subscriber_cnt=?,\
+                view_grade_idx = (SELECT idx FROM view_grade vg WHERE vg.view_cnt <= ? ORDER BY idx DESC LIMIT 1),\
+                follower_grade_idx = (SELECT idx FROM follower_grade fg WHERE fg.follower_cnt <= ? ORDER BY idx DESC LIMIT 1)\
                 WHERE idx=?";
     const updateCreatorsResult = db.queryParam_Parse(updateCreatorQuery, params)
         .then(result => {
