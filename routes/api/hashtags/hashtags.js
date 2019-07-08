@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
     if (!getHashtagsResult) {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.HASHTAG_SELECT_ERROR));
     } else {
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.HASHTAG_SELECT_SUCCESS, getHashtagsResult));
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.HASHTAG_SELECT_SUCCESS, getHashtagsResult[0]));
     }
 });
 

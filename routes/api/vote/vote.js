@@ -149,48 +149,26 @@ router.get('/lasts', async(req, res) => {
 });
 
 // 투표 제안
-router.post('/suggestion', /*authUtil.isLoggedin,*/ (req, res) => {
-    const {title, contents} = req.body;
+router.post('/suggestion', /*authUtil.isLoggedin,*/ async(req, res) => {
+    const {title, choices} = req.body;
 
-    // webtoonIdx, title, comment, img, cuts 중 하나라도 없으면 에러 응답
-    if (!webtoonIdx || !title || !req.files.img || !req.files.cuts || req.files.cuts.length === 0) {
-        console.log(`webtoonIdx : ${webtoonIdx}`);
-        console.log(`title : ${title}`);
-        console.log(`req.files : ${req.files}`);
+    if (!title || !choices) {
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
     }
 
-    const getWebtoonQuery = "SELECT * FROM webtoon WHERE webtoon_idx = ?";
-    const getWebtoonResult = db.queryParam_Parse(getWebtoonQuery, [webtoonIdx]);
+    const insertVoteQuery = "INSERT INTO vote(title) VALUES(?)";
+    const insertVoteResult = await db.queryParam_Parse(insertVoteQuery, [title]);
 
-    getWebtoonResult.then(()=>{
-        if(!getWebtoonResult || getWebtoonResult.length < 1){
-            res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.WEBTOON_SELECT_NOTHING + `: ${webtoonIdx}`));
-        }
+    if(!insertVoteResult){
+        return res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, `fail insert vote`));
+    }
     
-        const imgUrl = req.files.img[0].location;
-        const params = [webtoonIdx, title, imgUrl];
-    
-        const postEpisodeQuery = "INSERT INTO episode(webtoon_idx, title, img_url, views, date) VALUES(?, ?, ?, 0, now())";
-        db.queryParam_Parse(postEpisodeQuery, params, function (result) {
-            if (!result) {
-                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_INSERT_ERROR));
-            } else {
-                let postCutsQuery = "INSERT INTO cut(episode_idx, img_url) VALUES";
-                req.files.cuts.forEach(function (item, index, array) {
-                    postCutsQuery += `(${result.insertId}, '${item.location}'),`;
-                });
-                postCutsQuery = postCutsQuery.slice(0, postCutsQuery.length-1);
-                db.queryParam_Parse(postCutsQuery, params, function (result) {
-                    if (!result) {
-                        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_INSERT_ERROR));
-                    } else {
-                        res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_INSERT_SUCCESS));
-                    }
-                });
-            }
-        });
-    });
+    choices.forEach(async (choice, index, array)=>{
+        const insertVoteChoiceQuery = "INSERT INTO vote_choice(vote_idx, name) VALUES (?, ?)";
+        const insertVoteChoiceResult = await db.queryParam_Parse(insertVoteChoiceQuery, [insertVoteResult[0].insertId,choice.name]);
+        console.log(insertVoteChoiceResult);
+    })
+    res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, `success to suggest vote`));
 });
 
 // 에피소드 수정
