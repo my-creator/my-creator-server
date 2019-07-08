@@ -47,8 +47,6 @@ router.get('/list/:boardIdx', async (req, res) => {
 
 //게시글 상세 조회 다~ okdk
 
-//몇조 전,!!!!!!!!!!!!!!
-
 router.get('/detail/:postIdx', async (req, res) => {
  const {postIdx} = req.params;
     let getPostQuery  = `SELECT p.*, u.id, u.nickname, u.profile_url , COUNT(r.idx) AS 'reply_cnt' 
@@ -70,12 +68,19 @@ router.get('/detail/:postIdx', async (req, res) => {
 
 //커뮤니티 창 작은 최신글 순 조회(게시판 상관없이 5개만)성공
 //썸네일 추가해야함 okdk
-
+//핫이미지!!!!!!!!!
 router.get('/new', async (req, res) => { 
-    const getPostByCreateTimeLimitQuery = `SELECT  p.*
+    const getPostByCreateTimeLimitQuery = `SELECT  p.*,b.*,(SELECT COUNT(r.idx) FROM reply r WHERE r.post_idx = p.idx) AS reply_cnt
     FROM ( post p INNER JOIN board b ON b.idx = p.board_idx) 
     GROUP BY p.idx
     ORDER BY p.create_time ASC LIMIT 5`;
+
+    /*
+    SELECT  p.*,b.*,(SELECT COUNT(r.idx) FROM reply r WHERE r.post_idx = p.idx) AS reply_cnt
+    FROM ( post p INNER JOIN board b ON b.idx = p.board_idx) 
+    GROUP BY p.idx
+    ORDER BY p.create_time ASC LIMIT 5
+    */
 
     const  getPostByCreateTimeLimitResult = await db.queryParam_None(getPostByCreateTimeLimitQuery);
 
@@ -90,6 +95,7 @@ router.get('/new', async (req, res) => {
 
 //커뮤니티 창 작은 인기글 순 조회(게시판 상관없이 5개만)성공 okdk
 //제목추천수,댓글수,등록시간
+//일주일 기준 cron !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 router.get('/hot', async (req, res) => { 
     let getPostByHotQuery= `SELECT  p.*,b.*,(SELECT COUNT(r.idx) FROM reply r WHERE r.post_idx = p.idx) AS reply_cnt
     FROM ( post p INNER JOIN board b ON b.idx = p.board_idx) 
@@ -110,6 +116,7 @@ router.get('/hot', async (req, res) => {
 //전체 인기글 순 조회 성공(게시판 상관없이) Okdk
 //제목,이름,게시판,썸네일,시간(int) 
 //년,월,일,시간(초빼고
+//일주일 기준 cron !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 router.get('/allhot', async (req, res) => { 
     let getPostByCreateTimeQuery = `SELECT p.idx,p.board_idx,p.user_idx,p.title,p.contents,date_format(p.create_time,'%Y-%m-%d %h:%i'),date_format(p.update_time,'%Y-%m-%d %h:%i'),b.*,u.name
     FROM ( post p INNER JOIN board b ON b.idx = p.board_idx)
