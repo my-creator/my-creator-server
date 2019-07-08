@@ -1,3 +1,15 @@
+var express = require('express');
+var router = express.Router();
+
+const upload = require('../../../../config/multer');
+const defaultRes = require('../../../../module/utils/utils');
+const statusCode = require('../../../../module/utils/statusCode');
+const resMessage = require('../../../../module/utils/responseMessage');
+const db = require('../../../../module/utils/pool');
+const authUtil = require('../../../../module/utils/authUtils');
+const moment = require('moment');
+const jwtUtil = require('../../../../module/utils/jwt');
+
 
 //4. 크리에이터 프로필 조회
 //크리에이터명 프로필사진 크리에이터설명 카테고리(먹방2위)  즐겨찾는유저(팬게시판 좋아요) 구독자 누적조회수 
@@ -10,16 +22,69 @@
 router.get('/:creatorIdx', async (req, res) => {
     const { creatorIdx } = req.params;
 
-    const getCreatorPrifileQuery = `SELECT c.*,h.name AS 'category', bc.creator_idx AS 'is_board' 
-    FROM (( (creator c INNER JOIN creator_category cc ON c.idx = cc.creator_idx) 
-    INNER JOIN hashtag h ON h.idx = cc.hashtag_idx)
-    INNER JOIN board_creator bc ON bc.creator_idx = c.idx) WHERE c.idx = ?`;
-    const getCreatorPrifileResult = await db.queryParam_Parse(getCreatorPrifileQuery, [creatorIdx]);
+    const getCreatorProfileQuery = `SELECT c.*,vg.*,fg.*,ca.name AS 'category_name',ca.idx AS 'category_idx'
+    FROM creator c 
+    INNER JOIN view_grade vg ON vg.idx = c.view_grade_idx 
+    INNER JOIN follower_grade fg ON fg.idx = c.follower_grade_idx 
+    INNER JOIN creator_category cc ON cc.creator_idx = c.idx 
+    INNER JOIN category ca ON ca.idx = cc.category_idx 
+    WHERE c.idx = ?`;
+    const getCreatorProfileResult = await db.queryParam_Parse(getCreatorProfileQuery, [creatorIdx]);
 
-    if (!getCreatorPrifileResult) {
+//    const result = getCreatorProfileResult[0];
+    const result = JSON.parse(JSON.stringify(getCreatorProfileResult[0][0]));
+
+    const category_json = JSON.parse(JSON.stringify(getCreatorProfileResult));
+    const categoryIdx = category_json[0][0].category_idx;
+
+    if (!result) {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_PROFILE_ERROR));
     } else {
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_SELECT_PROFILE_SUCCESS, getCreatorPrifileResult));
+//        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_SELECT_PROFILE_SUCCESS, getCreatorPrifileResult));
+  
+  //특정 카테고리별 크리에이터들 리스트
+    const getCreatorsQuery=`SELECT cc.creator_idx ,c.*
+    FROM creator_category cc 
+    INNER JOIN creator c ON c.idx = cc.creator_idx 
+    WHERE cc.category_idx = ?
+    ORDER BY c.youtube_subscriber_cnt DESC`;
+
+/*
+#순위리스트
+SELECT cc.creator_idx ,c.*
+    FROM creator_category cc 
+    INNER JOIN creator c ON c.idx = cc.creator_idx 
+    WHERE cc.category_idx = 5
+    ORDER BY c.youtube_subscriber_cnt DESC;
+    */
+
+    const getCreatorsResult = await db.queryParam_Parse(getCreatorsQuery,categoryIdx);
+    const creators_json = JSON.parse(JSON.stringify(getCreatorsResult));
+
+
+    if(!getCreatorsResult){
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_PROFILE_ERROR));
+    }else{
+
+    let cnt = 0;
+   let cre = '';
+        getCreatorsResult[0].forEach((creator)=>{
+            cre = JSON.parse(JSON.stringify(creator));
+            cree = cre.creator_idx;
+            cnt += 1;
+            if(creator.creator_idx == creatorIdx){
+                const ans = cnt;//2
+                result["category_lank"]= ans;
+
+
+            }
+            //result[index][""]
+        });
+
+         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_SELECT_PROFILE_SUCCESS, result));
+
+
+    }
     }
 });
 
@@ -52,3 +117,14 @@ router.get('/stat/:creatorIdx', async (req, res) => {
 //크리에이터 설명 해시태그 #먹방 #대식가는 나중에
 //크리에이터 프로필의 스탯 등록 (해쉬태그 등록)
 //해쉬태그 설명!!!!!!!!!!! 단어 하나!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+
+
+
+
+//해쉬태그 등록
+
+
+module.exports = router;

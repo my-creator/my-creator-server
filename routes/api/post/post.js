@@ -47,8 +47,6 @@ router.get('/list/:boardIdx', async (req, res) => {
 
 //게시글 상세 조회 다~ okdk
 
-//몇조 전,!!!!!!!!!!!!!!
-
 router.get('/detail/:postIdx', async (req, res) => {
  const {postIdx} = req.params;
     let getPostQuery  = `SELECT p.*, u.id, u.nickname, u.profile_url , COUNT(r.idx) AS 'reply_cnt' 
