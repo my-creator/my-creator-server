@@ -36,9 +36,6 @@ router.get('/', async (req, res) => {
 //즐겨찾기한 게시판 조회 okdk
 router.get('/like', async (req, res) => {
 
-    const {userIdx} = req.body;
-    console.log("likeboard\n");
-    console.log(userIdx);
 
     let getLikeBoardQuery  = `SELECT b.idx, b.name,b.type FROM board b 
     INNER JOIN board_like bl ON bl.board_idx = b.idx 
@@ -223,41 +220,39 @@ router.post('/:boardIdx/like', authUtil.isLoggedin,  async(req, res) => {
 
 
 
-//게시판 즐겨찾기 취소
-router.delete(':/boardIdx/unlike', authUtil.isLoggedin, async(req, res) => {
-   const {boardIdx} = req.params;
-    const params = [boardIdx,req.decoded.user_idx];
+//게시판 즐겨찾기 취소 OKDK
+router.delete('/:boardIdx/unlike', authUtil.isLoggedin,  async(req, res) => {
+    const {boardIdx} = req.params;
 
-
-    console.log("liketest\n");
-    console.log(params);
     // just check the
     let getLikeBoardQuery  = "SELECT * FROM board_like WHERE board_idx = ? AND user_idx = ?";
-    const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery, params);
-    
-    console.log(getLikeBoardResult);
+    const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery, [boardIdx,req.decoded.user_idx]);
+
+
     if(!getLikeBoardResult){
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.BOARD_LIKE_SELECT_ERROR));
-    }else if(getLikeBoardResult.length != 0){//이미 즐겨찾기한 상태
+    }else if(getLikeBoardResult[0].length === 0){//즐겨찾기 안함
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.BOARD_LIKE_DELETE_ERROR));
+    }else if(getLikeBoardResult[0].length != 0){
+        const deleteLikeBoardQuery = "DELETE FROM board_like WHERE user_idx = ? and board_idx = ?";
+        const deleteLikeBoardResult = await db.queryParam_Parse(deleteLikeBoardQuery, [req.decoded.user_idx,boardIdx]);
+       
+            if (!deleteLikeBoardResult) {
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_DELETE_ERROR));
+            }else if(deleteLikeBoardResult[0].affectedRows != 1){
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USERINFO_SELECT_FAIL));
+            }
+            else{
+                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_LIKE_DELETE_SUCCESS));
+            }
+
     }
 
-    const deleteLikeQuery = "DELETE FROM board_like WHERE board_idx = ? AND user_idx = ?";
-    const deleteLikeResult = await db.queryParam_Parse(deleteLikeQuery, params);
-
-
-    deleteLikeResult.then((data)=>{
-        if (!data) {
-            return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_DELETE_ERROR));
-        }else{
-            return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_DELETE_ERROR));
-        }
-    
-    });
 });
 
 
 //크리에이터 팬 게시판 조회
+//디비 수정 !!!!!!!!!!!!
 router.get('/creator/:creatorIdx', async (req, res) => {
  const {creatorIdx} =req.params;
 //post글 board_idx  = board idx name -> 
@@ -352,9 +347,6 @@ router.get('/request/:boardRequestIdx',async (req, res) => {
 
     const getBoardRequestFinishedResult = await db.queryParam_Parse(getBoardRequestFinishedQuery,[boardRequestIdx]);
 
-    console.log("ta\n");
-    console.log(getBoardRequestFinishedResult);
-console.log(getBoardRequestFinishedResult[0].length);
     //쿼리문의 결과가 실패이면 null을 반환한다
     if (!getBoardRequestFinishedResult || getBoardRequestFinishedResult[0].length === 0) { //쿼리문이 실패했을 때
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.GET_BOARD_SEARCH_ERROR));

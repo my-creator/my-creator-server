@@ -19,7 +19,7 @@ const jwtUtil = require('../../../module/utils/jwt');
 router.post('/', authUtil.isLoggedin, async(req, res) => {
     const {postIdx,comments,is_anonymous} = req.body;
     const userIdx = req.decoded.user_idx;
-
+    const createTime = moment().format("YYYY-MM-DD HH:mm");
 
     //게시글 있는지
     const getPostQuery = "SELECT * FROM post WHERE idx = ?";
@@ -32,8 +32,8 @@ router.post('/', authUtil.isLoggedin, async(req, res) => {
             res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.POSTS_SELECT_NOTHING + `: ${postIdx}`));
     }
     
-        const postCommentsQuery = "INSERT INTO reply(post_idx, user_idx, content,create_time,is_anonymous) VALUES(?, ?, ?,CURDATE(),?)";
-        const postCommentsResult = db.queryParam_Parse(postCommentsQuery, [postIdx,userIdx,comments,is_anonymous], function(result){
+        const postCommentsQuery = "INSERT INTO reply(post_idx, user_idx, content,create_time,is_anonymous) VALUES(?, ?, ?,?,?)";
+        const postCommentsResult = db.queryParam_Parse(postCommentsQuery, [postIdx,userIdx,comments,createTime,is_anonymous], function(result){
             if (!result) {
                 res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.COMMENT_INSERT_ERROR));
             } else {
@@ -44,13 +44,12 @@ router.post('/', authUtil.isLoggedin, async(req, res) => {
 });
 
 
-// 댓글 조회성공
-//유저명 시간 내용 썸네일
-//익명!!!!!!!!!!!!!!!!!!!!!
+// 댓글 조회성공 okdk
+//유저명 시간 내용
 router.get('/:postIdx', async(req, res) => {
     const {postIdx} = req.params;
     
-    const getCommentsQuery = `SELECT r.*, u.name,u.thumbnail 
+    const getCommentsQuery = `SELECT r.idx,r.post_idx,r.user_idx,r.content,date_format(r.create_time,'%Y-%m-%d %h:%i') AS reply_create_time,r.is_anonymous, u.name,u.profile_url
     FROM ( reply r INNER JOIN user u ON u.idx = r.user_idx) 
     WHERE r.post_idx = ? GROUP BY r.idx ORDER BY r.create_time DESC`;
     const getCommentsResult = await db.queryParam_Parse(getCommentsQuery, [postIdx]);
@@ -62,8 +61,7 @@ router.get('/:postIdx', async(req, res) => {
     }
 });
 
-// 댓글 수정
-//익명!!!!!!!!!!!!!!!!!!!!!
+// 댓글 수정 okdk
 router.put('/:replyIdx', authUtil.isCommentWriter,  (req, res) => {
     
     const {replyIdx} = req.params;
@@ -81,7 +79,7 @@ router.put('/:replyIdx', authUtil.isCommentWriter,  (req, res) => {
     putCommentsQuery  = putCommentsQuery.slice(0, putCommentsQuery .length-1);
     putCommentsQuery  += " WHERE idx = ? AND user_idx = ?";
 
-    db.queryParam_Parse(putCommentsQuery, [replyIdx,userIdx], function(err,result){
+    db.queryParam_Parse(putCommentsQuery, [replyIdx,userIdx], function(result,err){
         if (err) {
             res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.COMMENT_UPDATE_ERROR));
         } else {
@@ -91,7 +89,7 @@ router.put('/:replyIdx', authUtil.isCommentWriter,  (req, res) => {
     });
 });
 
-// 댓글 삭제
+// 댓글 삭제 okdk
 router.delete('/:replyIdx', authUtil.isCommentWriter,  async(req, res) => {
     const {replyIdx} = req.params;
 
