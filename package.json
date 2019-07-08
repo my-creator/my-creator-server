@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node ./bin/www",
-    "nostart":"nodemon ./bin/www"
+    "nostart": "nodemon ./bin/www"
   },
   "dependencies": {
     "aws-sdk": "^2.485.0",
@@ -21,7 +21,7 @@
     "multer-s3": "^2.9.0",
     "mysql2": "^1.6.5",
     "nodemon": "^1.19.1",
-    "promise-mysql": "^4.0.4",
+    "promise-mysql": "^3.3.2",
     "querystring": "^0.2.0",
     "rand-token": "^0.4.0",
     "request": "^2.88.0",
