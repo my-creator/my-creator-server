@@ -24,14 +24,16 @@ const jwtUtil = require('../../../../module/utils/jwt');
 router.get('/:creatorIdx', async (req, res) => {
     const { creatorIdx } = req.params;
 
-    const getCreatorProfileQuery = `SELECT c.*,ca.name AS 'category_name',ca.idx AS 'category_idx',
+    const getCreatorProfileQuery = `SELECT c.*,ca.name AS 'category_name',ca.idx AS 'category_idx', 
 vg.name AS 'view_grame_name',vg.img_url AS 'view_grade_img_url',vg.view_cnt AS 'view_grade_view_cnt',
-fg.name AS 'follower_grade_name',fg.level AS 'follower_grade_level',fg.img_url AS 'follower_grade_img_url',fg.follower_cnt AS 'follower_grade_follower_cnt'
+fg.name AS 'follower_grade_name',fg.level AS 'follower_grade_level',fg.img_url AS 'follower_grade_img_url',fg.follower_cnt AS 'follower_grade_follower_cnt',
+b.idx AS 'board_idx' ,b.name AS 'board_name',b.type AS 'board_type'
     FROM creator c 
     INNER JOIN view_grade vg ON vg.idx = c.view_grade_idx 
     INNER JOIN follower_grade fg ON fg.idx = c.follower_grade_idx 
     INNER JOIN creator_category cc ON cc.creator_idx = c.idx 
     INNER JOIN category ca ON ca.idx = cc.category_idx 
+    INNER JOIN board b ON b.creator_idx = c.idx
     WHERE c.idx = ?`;
     const getCreatorProfileResult = await db.queryParam_Parse(getCreatorProfileQuery, [creatorIdx]);
 
@@ -100,6 +102,21 @@ SELECT cc.creator_idx ,c.*
 //192명 참여
 //스탯5개
 
+/*
+use crecre;
+ALTER TABLE board
+ADD CONSTRAINT fkcreator_idx
+FOREIGN KEY (creator_idx)
+REFERENCES creator (idx);
+
+
+SELECT c.*,c.name AS 'category', b.creator_idx AS 'is_board' 
+    FROM creator c INNER JOIN creator_category cc ON c.idx = cc.creator_idx
+    INNER JOIN category cg ON cg.idx = cc.category_idx
+    INNER JOIN board b ON b.creator_idx = c.idx
+    WHERE c.idx = 1717;
+
+*/
 router.get('/stat/:creatorIdx', async (req, res) => {
     const { creatorIdx } = req.params;
 
@@ -122,7 +139,32 @@ router.get('/stat/:creatorIdx', async (req, res) => {
 //크리에이터 설명 해시태그 #먹방 #대식가는 나중에
 //크리에이터 프로필의 스탯 등록 (해쉬태그 등록)
 //해쉬태그 설명!!!!!!!!!!! 단어 하나!!!!!!!!!!!!!!!!!!!!!!
+router.post('/stat/:creatorIdx', authUtil.isLoggedin, async(req, res) => {
+    const {postIdx,comments,is_anonymous} = req.body;
+    const userIdx = req.decoded.user_idx;
+    const createTime = moment().format("YYYY-MM-DD HH:mm");
 
+    //게시글 있는지
+    const getPostQuery = "SELECT * FROM post WHERE idx = ?";
+    const getPostResult = await db.queryParam_Parse(getPostQuery, [postIdx]);
+
+    console.log(getPostResult[0]);
+
+
+     if(!getPostResult || getPostResult.length < 1){
+            res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.POSTS_SELECT_NOTHING + `: ${postIdx}`));
+    }
+    
+        const postCommentsQuery = "INSERT INTO reply(post_idx, user_idx, content,create_time,is_anonymous) VALUES(?, ?, ?,?,?)";
+        const postCommentsResult = db.queryParam_Parse(postCommentsQuery, [postIdx,userIdx,comments,createTime,is_anonymous], function(result){
+            if (!result) {
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.COMMENT_INSERT_ERROR));
+            } else {
+                res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.COMMENT_INSERT_SUCCESS));
+            }
+
+    });
+});
 
 
 
@@ -130,7 +172,32 @@ router.get('/stat/:creatorIdx', async (req, res) => {
 
 
 //해쉬태그 등록
+router.post('/hashtag/:creatorIdx', authUtil.isLoggedin, async(req, res) => {
+    const {postIdx,comments,is_anonymous} = req.body;
+    const userIdx = req.decoded.user_idx;
+    const createTime = moment().format("YYYY-MM-DD HH:mm");
 
+    //게시글 있는지
+    const getPostQuery = "SELECT * FROM post WHERE idx = ?";
+    const getPostResult = await db.queryParam_Parse(getPostQuery, [postIdx]);
+
+    console.log(getPostResult[0]);
+
+
+     if(!getPostResult || getPostResult.length < 1){
+            res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.POSTS_SELECT_NOTHING + `: ${postIdx}`));
+    }
+    
+        const postCommentsQuery = "INSERT INTO reply(post_idx, user_idx, content,create_time,is_anonymous) VALUES(?, ?, ?,?,?)";
+        const postCommentsResult = db.queryParam_Parse(postCommentsQuery, [postIdx,userIdx,comments,createTime,is_anonymous], function(result){
+            if (!result) {
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.COMMENT_INSERT_ERROR));
+            } else {
+                res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.COMMENT_INSERT_SUCCESS));
+            }
+
+    });
+});
 
 
 
