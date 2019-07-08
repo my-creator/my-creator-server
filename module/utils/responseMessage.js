@@ -128,5 +128,11 @@ module.exports = {
     COMMENT_INSERT_SUCCESS:"댓글 작성 성공",
     COMMENT_INSERT_ERROR:"댓글 작성 실패",
     POST_SELECT_SUCCESS:"게시글 조회 성공",
-    POST_SELECT_ERROR:"게시글 조회 에러"
+    POST_SELECT_ERROR:"게시글 조회 에러",
+    COMMENT_UPDATE_ERROR:"댓글 수정 에러",
+    COMMENT_UPDATE_SUCCESS:"댓글 수정 성공",
+    COMMENT_SELECT_ERROR:"댓글 조회 에러",
+    COMMENT_SELECT_SUCCESS:"댓글 조회 성공",
+    COMMENT_DELETE_SUCCESS:"댓글 삭제 성공",
+    COMMENT_DELETE_ERROR:"댓글 삭제 에러"
 };

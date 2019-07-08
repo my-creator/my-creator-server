@@ -89,7 +89,6 @@ router.get('/new', async (req, res) => {
 
 
 //커뮤니티 창 작은 인기글 순 조회(게시판 상관없이 5개만)성공 okdk
-
 //제목추천수,댓글수,등록시간
 router.get('/hot', async (req, res) => { 
     let getPostByHotQuery= `SELECT  p.*,b.*,(SELECT COUNT(r.idx) FROM reply r WHERE r.post_idx = p.idx) AS reply_cnt
@@ -110,10 +109,9 @@ router.get('/hot', async (req, res) => {
 
 //전체 인기글 순 조회 성공(게시판 상관없이) Okdk
 //제목,이름,게시판,썸네일,시간(int) 
-//년,월,일,시간(초빼고)
-//시간 형식!!!!!!!!!!!!!
+//년,월,일,시간(초빼고
 router.get('/allhot', async (req, res) => { 
-    let getPostByCreateTimeQuery = `SELECT p.*,b.*,u.name
+    let getPostByCreateTimeQuery = `SELECT p.idx,p.board_idx,p.user_idx,p.title,p.contents,date_format(p.create_time,'%Y-%m-%d %h:%i'),date_format(p.update_time,'%Y-%m-%d %h:%i'),b.*,u.name
     FROM ( post p INNER JOIN board b ON b.idx = p.board_idx)
     INNER JOIN user u ON u.idx = p.user_idx
     GROUP BY p.idx ORDER BY p.like_cnt DESC`;
@@ -153,9 +151,6 @@ router.get('/allnew', async (req, res) => {
 //썸네일 
 //정각 기준으로 작성한 글에서 추천수 많은 수로 인기글 순위 매김.  오늘 뜨는 인기글에서 더보기 누르면 인기글로 넘어감.
 //좋아요수많은 거
-//익명!!!!!!!!!!!!!!!!!!!!! 
-
-
 //OKDK
 
 router.get('/todayhot', async (req, res) => {
@@ -177,7 +172,6 @@ router.get('/todayhot', async (req, res) => {
 });
 
 //첫화면 방금 막 올라온 최신글 조회(3개)성공 OKDK
-//익명!!!!!!!!!!!!!!!!!!!!!
 router.get('/todaynew', async (req, res) => {
 
     let getTodayHotPostQuery  = `SELECT p.*,b.*,u.name
@@ -201,7 +195,6 @@ router.get('/todaynew', async (req, res) => {
 
 //게시글 내용,제목 검색 okdk
 //localhost:3000/api/posts/search?title=free&contents=category
-//검색어가 너무 짧습니다 뜨는 경우!!!!!!!!!!!!!!!!!!
 router.get('/search', async (req, res) => {
  let {title, contents} = req.query;
 
@@ -234,42 +227,56 @@ router.get('/search', async (req, res) => {
 
 //토큰 :eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZHgiOjEsImdyYWRlIjoiQURNSU4iLCJuYW1lIjoi66qF64uk7JewIiwiaWF0IjoxNTYyMDU0NTI0LCJleHAiOjE1NjMyNjQxMjQsImlzcyI6InlhbmcifQ.MccUElA8iA4HRcz4IN4mBIxpqoa9i6PUyPbv2aTwT8w
 
-
+//'/:boardIdx'
 //게시글 좋아요
+//왜 안되냐!!!!!!!!!!!!!!!!!!
 router.post('/:postIdx/like', authUtil.isLoggedin,  async(req, res) => {
-    const postIdx = req.params;
+    const postIdx = req.params.postIdx;
     const userIdx =req.decoded.user_idx;
-
-    console.log("liketest\n");
-    console.log(req.params, userIdx);
-    
+    const params = [postIdx,userIdx];
     // just check the
-    let getLikePostQuery  = "SELECT * FROM like WHERE post_idx = ? AND user_idx = ?";
-    const getLikePostResult = await db.queryParam_Parse(getLikePostQuery, params);
+    //let getLikePostQuery  = `SELECT * FROM 'like' WHERE post_idx = '${postIdx}' AND user_idx = '${userIdx}'`;
+    let getLikePostQuery  = `SELECT * FROM 'like' WHERE post_idx = ? AND user_idx = ?`;
+    const getLikePostResult = await db.queryParam_Parse(getLikePostQuery,params);
 
-    if(!getLikePostResult){
-        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.POST_LIKE_SELECT_ERROR));
-    }else if(getLikeBoardResult.length != 0){//이미 즐겨찾기한 상태
-        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.POST_LIKE_INSERT_ERROR));
+//user 12 post 43
+        console.log("getLIkePostResult");
+        console.log(getLikePostResult);
+
+    if(!getLikePostResult){//좋아요 안함
+        
+//        const postLikeBoardQuery = `INSERT INTO 'like' (post_idx,user_idx) VALUES('${userIdx}', '${postIdx}')`;
+
+       const postLikeBoardQuery = `INSERT INTO 'like' (post_idx,user_idx) VALUES(?, ?)`;
+        const postLikeBoardResult = await db.queryParam_Parse(postLikeBoardQuery,params);
+
+        console.log("postLikeBoardResult");
+        console.log(postLikeBoardResult);
+            if (!postLikeBoardResult) {
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_INSERT_ERROR));
+            }else if(postLikeBoardResult === 0){
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USERINFO_SELECT_FAIL));
+            }
+            else{
+                let putPostLikeQuery  = "UPDATE post SET like_cnt = like_cnt + 1 WHERE idx = ?";
+                const putPostLikeResult = await db.queryParam_Parse(putPostLikeQuery, [postIdx]);
+                
+                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_LIKE_INSERT_SUCCESS));
+            }
+
+    }else{
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USERINFO_SELECT_FAIL));
     }
-
-    const postLikeBoardQuery = "INSERT INTO `like`(user_idx, board_idx) VALUES(?, ?)";
-    const postLikeBoardResult = await db.queryParam_Parse(postLikeBoardQuery, [postIdx,userIdx]);
-    
-        if (!postLikeBoardResult) {
-
-            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_LIKE_INSERT_ERROR));
-        }else{
-            let putPostLikeQuery  = "UPDATE post SET like_cnt = like_cnt + 1 WHERE idx = ?";
-            const putPostLikeResult = await db.queryParam_Parse(putPostLikeQuery, [postIdx]);
-
-            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_LIKE_INSERT_SUCCESS));
-        }
 
 });
 
 
+
+
+
+
 //게시글 좋아요 취소
+//왜 안되냐!!!!!!!!!!!!!!!!!!
 router.delete(':/postIdx/unlike', authUtil.isLoggedin, async(req, res) => {
    const {boardIdx} = req.params;
     const params = [boardIdx,req.decoded.user_idx];
@@ -302,14 +309,15 @@ router.delete(':/postIdx/unlike', authUtil.isLoggedin, async(req, res) => {
 });
 
 //게시글 싫어요
+//왜 안되냐!!!!!!!!!!!!!!!!!!
 router.post('/:postIdx/hate', authUtil.isLoggedin,  async(req, res) => {
-    const {boardIdx} = req.params;
-    const params = [boardIdx,req.decoded.user_idx];
+    const {postIdx} = req.params;
+    const params = [postIdx,req.decoded.user_idx];
 
     console.log("liketest\n");
     console.log(params);
     // just check the
-    let getLikeBoardQuery  = "SELECT * FROM board_like WHERE board_idx = ? AND user_idx = ?";
+    let getLikeBoardQuery  = "SELECT * FROM `like` WHERE post_idx = ? AND user_idx = ?";
     const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery, params);
 
     if(!getLikeBoardResult){
@@ -318,7 +326,7 @@ router.post('/:postIdx/hate', authUtil.isLoggedin,  async(req, res) => {
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.BOARD_LIKE_INSERT_ERROR));
     }
 
-    const postLikeBoardQuery = "INSERT INTO `board_like`(user_idx, board_idx) VALUES(?, ?)";
+    const postLikeBoardQuery = "INSERT INTO `like`(post_idx,user_idx) VALUES(?, ?)";
     const postLikeBoardResult = db.queryParam_Parse(postLikeBoardQuery, params);
     
     postLikeBoardResult.then((data)=>{
@@ -332,6 +340,7 @@ router.post('/:postIdx/hate', authUtil.isLoggedin,  async(req, res) => {
 });
 
 //게시글 싫어요 취소
+//왜 안되냐!!!!!!!!!!!!!!!!!!
 router.delete(':/postIdx/unhate', authUtil.isLoggedin, async(req, res) => {
    const {boardIdx} = req.params;
     const params = [boardIdx,req.decoded.user_idx];
@@ -340,7 +349,7 @@ router.delete(':/postIdx/unhate', authUtil.isLoggedin, async(req, res) => {
     console.log("liketest\n");
     console.log(params);
     // just check the
-    let getLikeBoardQuery  = "SELECT * FROM board_like WHERE board_idx = ? AND user_idx = ?";
+    let getLikeBoardQuery  = "SELECT * FROM `like` WHERE board_idx = ? AND user_idx = ?";
     const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery, params);
 
     if(!getLikeBoardResult){
@@ -349,7 +358,7 @@ router.delete(':/postIdx/unhate', authUtil.isLoggedin, async(req, res) => {
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.BOARD_LIKE_DELETE_ERROR));
     }
 
-    const deleteLikeQuery = "DELETE FROM board_like WHERE board_idx = ? AND user_idx = ?";
+    const deleteLikeQuery = "DELETE FROM `like` WHERE board_idx = ? AND user_idx = ?";
     const deleteLikeResult = await db.queryParam_Parse(deleteLikeQuery, params);
 
 
@@ -533,6 +542,7 @@ router.put('/:postIdx', authUtil.isLoggedin, upload.array('imgs'),async(req, res
 
 
 // 게시글 삭제
+//익명!!!!!!!!!!!!!!!
 router.delete('/:postIdx', authUtil.isLoggedin,  async(req, res) => {
     const postIdx = req.params.postIdx;
 

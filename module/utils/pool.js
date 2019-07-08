@@ -49,31 +49,13 @@ module.exports = { // 두 개의 메소드 module화
         try {
             
             var connection = await pool.getConnection(); 
-            
-            result = await connection.query(query, value) || null;
-            
-        } catch (err) {
-            //console.log(err);
-            connection.rollback(() => {});
-            next(err);
-        } finally {
-            connection.release();
-            if(cb){
-                cb(result);
-            }
-            return result;
-        }
-    },
-    queryParam_Nonee: async(inputquery,cb) => {
-        const query = inputquery;
-        let result;
+           
 
-        try {
-            
-            var connection = await pool.getConnection(); 
-            
-            result = await connection.query(query) || null;
-            
+            result = await connection.query(query, value) || null;
+           
+           console.log(result);
+            console.log(result);
+
         } catch (err) {
             //console.log(err);
             connection.rollback(() => {});
