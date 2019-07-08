@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
     if (!getCategoriesResult) {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CATEGORY_SELECT_ERROR));
     } else {
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CATEGORY_SELECT_SUCCESS, getCategoriesResult));
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CATEGORY_SELECT_SUCCESS, getCategoriesResult[0]));
     }
 });
 
