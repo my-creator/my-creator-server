@@ -11,6 +11,8 @@ const moment = require('moment');
 const jwtUtil = require('../../../../module/utils/jwt');
 
 
+
+
 //4. 크리에이터 프로필 조회
 //크리에이터명 프로필사진 크리에이터설명 카테고리(먹방2위)  즐겨찾는유저(팬게시판 좋아요) 구독자 누적조회수 
 //랭크 등급, 업적등급
@@ -22,7 +24,9 @@ const jwtUtil = require('../../../../module/utils/jwt');
 router.get('/:creatorIdx', async (req, res) => {
     const { creatorIdx } = req.params;
 
-    const getCreatorProfileQuery = `SELECT c.*,vg.*,fg.*,ca.name AS 'category_name',ca.idx AS 'category_idx'
+    const getCreatorProfileQuery = `SELECT c.*,ca.name AS 'category_name',ca.idx AS 'category_idx',
+vg.name AS 'view_grame_name',vg.img_url AS 'view_grade_img_url',vg.view_cnt AS 'view_grade_view_cnt',
+fg.name AS 'follower_grade_name',fg.level AS 'follower_grade_level',fg.img_url AS 'follower_grade_img_url',fg.follower_cnt AS 'follower_grade_follower_cnt'
     FROM creator c 
     INNER JOIN view_grade vg ON vg.idx = c.view_grade_idx 
     INNER JOIN follower_grade fg ON fg.idx = c.follower_grade_idx 
@@ -33,6 +37,8 @@ router.get('/:creatorIdx', async (req, res) => {
 
 //    const result = getCreatorProfileResult[0];
     const result = JSON.parse(JSON.stringify(getCreatorProfileResult[0][0]));
+    console.log("Resutl");
+    console.log(result);
 
     const category_json = JSON.parse(JSON.stringify(getCreatorProfileResult));
     const categoryIdx = category_json[0][0].category_idx;
@@ -78,7 +84,6 @@ SELECT cc.creator_idx ,c.*
 
 
             }
-            //result[index][""]
         });
 
          res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_SELECT_PROFILE_SUCCESS, result));
@@ -125,6 +130,10 @@ router.get('/stat/:creatorIdx', async (req, res) => {
 
 
 //해쉬태그 등록
+
+
+
+
 
 
 module.exports = router;
