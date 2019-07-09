@@ -13,14 +13,14 @@ const jwtUtil = require('../../../../module/utils/jwt');
 
 
 
-//4. 크리에이터 프로필 조회
+//4. 크리에이터 프로필 조회 okdk
 //크리에이터명 프로필사진 크리에이터설명 카테고리(먹방2위)  즐겨찾는유저(팬게시판 좋아요) 구독자 누적조회수 
 //랭크 등급, 업적등급
 //팬게시판 여부
 //랭킹 경험치, 업적 경험치(마스터일땐 경험치 없다)
-//랭킹 이미지,업적 이미지!!!! 등급 이미지!!!!!!!!!!!
+//랭킹 이미지,업적 이미지! 등급 이미지!!
 //순위
-//카테고리 먹방 2위!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//카테고리 먹방 2위!!
 router.get('/:creatorIdx', async (req, res) => {
     const { creatorIdx } = req.params;
 
@@ -97,106 +97,190 @@ SELECT cc.creator_idx ,c.*
 
 
 
-//크리에이터 프로필의 스탯조회
-//토탈 3.6점해야함!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-//192명 참여
-//스탯5개
-
-/*
-use crecre;
-ALTER TABLE board
-ADD CONSTRAINT fkcreator_idx
-FOREIGN KEY (creator_idx)
-REFERENCES creator (idx);
-
-
-SELECT c.*,c.name AS 'category', b.creator_idx AS 'is_board' 
-    FROM creator c INNER JOIN creator_category cc ON c.idx = cc.creator_idx
-    INNER JOIN category cg ON cg.idx = cc.category_idx
-    INNER JOIN board b ON b.creator_idx = c.idx
-    WHERE c.idx = 1717;
+//크리에이터 프로필의 스탯조회 okdk
+/*    
+SELECT cs.score,s.name
+FROM creator_stat cs
+INNER JOIN stat s ON s.idx = cs.stat_idx
+WHERE cs.creator_idx = 1717;
 
 */
 router.get('/stat/:creatorIdx', async (req, res) => {
     const { creatorIdx } = req.params;
 
-    const getCreatorPrifileQuery = `SELECT cs.idx,cs.creator_idx,
-    COUNT(cs.user_idx) AS'stat_vote_cnt',AVG(cs.stat1) AS'stat1',AVG(cs.stat2)AS'stat2',AVG(cs.stat3)AS'stat3',
-    AVG(cs.stat4)AS'stat4',AVG(cs.stat5)AS'stat5'
-    FROM creator_stat cs WHERE cs.creator_idx = `;
-    const getCreatorPrifileResult = await db.queryParam_Parse(getCreatorPrifileQuery, [creatorIdx]);
+    const getCreatorStatQuery = `SELECT AVG(cs.score) AS 'stat_score',s.name , s.idx AS 'stat_idx'
+FROM creator_stat cs
+INNER JOIN stat s ON s.idx = cs.stat_idx
+WHERE cs.creator_idx = ?
+GROUP BY cs.stat_idx`;
+    const getCreatorStatResult = await db.queryParam_Parse(getCreatorStatQuery, [creatorIdx]);
 
-    if (!getCreatorPrifileResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_PROFILE_ERROR));
+    const result = JSON.parse(JSON.stringify(getCreatorStatResult[0]));
+
+
+
+    if (!getCreatorStatResult) {
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_STAT_ERROR));
     } else {
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_SELECT_PROFILE_SUCCESS, getCreatorPrifileResult));
+
+        //avg 쿼리
+        const getCreatorStatAvgQuery = `SELECT AVG(cs.score) AS 'avg_stat',
+        COUNT(cs.score) AS 'join_cnt_stat'
+FROM creator_stat cs
+INNER JOIN stat s ON s.idx = cs.stat_idx
+WHERE cs.creator_idx = ?`;
+
+        const getCreatorStatAvgResult = await db.queryParam_Parse(getCreatorStatAvgQuery, [creatorIdx]);
+        const avg_json = JSON.parse(JSON.stringify(getCreatorStatAvgResult));
+
+
+    if (!getCreatorStatAvgResult) {
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_STAT_ERROR));
+    } else {
+        const avg = JSON.parse(JSON.stringify(getCreatorStatAvgResult[0]));
+        result.push(avg[0]);
+    }
+
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_SELECT_STAT_SUCCESS, result));
     }
 });
 
 
-//크리에이터 프로필의 스탯 등록(능력평점 참여)
-//5개 중 하나라도 미입력시 미입력나오게!!!!!!
-//크리에이터 설명 해시태그 #먹방 #대식가는 나중에
-//크리에이터 프로필의 스탯 등록 (해쉬태그 등록)
-//해쉬태그 설명!!!!!!!!!!! 단어 하나!!!!!!!!!!!!!!!!!!!!!!
-router.post('/stat/:creatorIdx', authUtil.isLoggedin, async(req, res) => {
-    const {postIdx,comments,is_anonymous} = req.body;
-    const userIdx = req.decoded.user_idx;
-    const createTime = moment().format("YYYY-MM-DD HH:mm");
 
-    //게시글 있는지
-    const getPostQuery = "SELECT * FROM post WHERE idx = ?";
-    const getPostResult = await db.queryParam_Parse(getPostQuery, [postIdx]);
-
-    console.log(getPostResult[0]);
-
-
-     if(!getPostResult || getPostResult.length < 1){
-            res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.POSTS_SELECT_NOTHING + `: ${postIdx}`));
-    }
+//크리에이터 프로필의 스탯 등록창 조회 okdk
+router.get('/stat/detail/:creatorIdx', async (req, res) => {
+    const { creatorIdx } = req.params;
+//소통 매력 실력 고막 개성
+//설명
+    let getStatDetailQuery  = `SELECT DISTINCT s.*
+FROM creator_stat cs
+INNER JOIN stat s ON s.idx = cs.stat_idx
+WHERE cs.creator_idx = ?`;
     
-        const postCommentsQuery = "INSERT INTO reply(post_idx, user_idx, content,create_time,is_anonymous) VALUES(?, ?, ?,?,?)";
-        const postCommentsResult = db.queryParam_Parse(postCommentsQuery, [postIdx,userIdx,comments,createTime,is_anonymous], function(result){
-            if (!result) {
-                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.COMMENT_INSERT_ERROR));
-            } else {
-                res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.COMMENT_INSERT_SUCCESS));
-            }
+    const getStatDetailResult = await db.queryParam_Parse(getStatDetailQuery,[creatorIdx]);
 
-    });
+    //쿼리문의 결과가 실패이면 null을 반환한다
+    if (!getStatDetailResult) { //쿼리문이 실패했을 때
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_STAT_DETAIL_ERROR));
+    } else if(getStatDetailResult.length === 0){
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_STAT_DETAIL_ERROR));
+    }else{ //쿼리문이 성공했을 때
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_SELECT_STAT_DETAIL_SUCCESS,getStatDetailResult[0]));
+    }
 });
 
 
-
-
-
-
-//해쉬태그 등록
-router.post('/hashtag/:creatorIdx', authUtil.isLoggedin, async(req, res) => {
-    const {postIdx,comments,is_anonymous} = req.body;
-    const userIdx = req.decoded.user_idx;
-    const createTime = moment().format("YYYY-MM-DD HH:mm");
-
-    //게시글 있는지
-    const getPostQuery = "SELECT * FROM post WHERE idx = ?";
-    const getPostResult = await db.queryParam_Parse(getPostQuery, [postIdx]);
-
-    console.log(getPostResult[0]);
-
-
-     if(!getPostResult || getPostResult.length < 1){
-            res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.POSTS_SELECT_NOTHING + `: ${postIdx}`));
-    }
+//크리에이터 프로필의 스탯 등록 okdk
+router.post('/stat/detail/:creatorIdx', authUtil.isLoggedin, async(req, res) => {
     
-        const postCommentsQuery = "INSERT INTO reply(post_idx, user_idx, content,create_time,is_anonymous) VALUES(?, ?, ?,?,?)";
-        const postCommentsResult = db.queryParam_Parse(postCommentsQuery, [postIdx,userIdx,comments,createTime,is_anonymous], function(result){
-            if (!result) {
-                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.COMMENT_INSERT_ERROR));
-            } else {
-                res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.COMMENT_INSERT_SUCCESS));
+    let statIdx = [];
+    let score = [];
+    statIdx[0] = req.body.statIdx1;
+    statIdx[1] = req.body.statIdx2;
+    statIdx[2]= req.body.statIdx3;
+    statIdx[3] = req.body.statIdx4;
+    statIdx[4]= req.body.statIdx5;
+
+    const creatorIdx = parseInt(req.params.creatorIdx);
+    const userIdx = req.decoded.user_idx;
+    
+    score[0] = parseFloat(req.body.score1);
+    score[1] = parseFloat(req.body.score2);
+    score[2]= parseFloat(req.body.score3);
+    score[3] = parseFloat(req.body.score4);
+    score[4]= parseFloat(req.body.score5);
+
+
+
+    if (!score[1] || !score[2] || !score[3] || !score[4] || !score[0] || !statIdx[1] || !statIdx[2] || !statIdx[3] || !statIdx[4] || !statIdx[0] || !userIdx || !creatorIdx) {
+        return res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
+    }
+
+    console.log(userIdx,creatorIdx,score[1],score[2],score[3],score[4],score[0],statIdx[1],statIdx[2],statIdx[3],statIdx[4],statIdx[0]);
+    
+    let insertStatResult = [];
+    for(var i = 0;i<5;i++){
+        const insertStatQuery = "INSERT INTO creator_stat(stat_idx, creator_idx, user_idx,score) VALUES(?, ?, ?,?)";
+        insertStatResult[i] = await db.queryParam_Parse(insertStatQuery, [statIdx[i],creatorIdx,userIdx,score[i]]);
+        };
+
+
+    if (!insertStatResult[0] ||!insertStatResult[1] || !insertStatResult[2] || !insertStatResult[3] || !insertStatResult[4]) {
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.STAT_INSERT_ERROR));
+        } else {
+                res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.STAT_INSERT_SUCCESS));
+    }
+    });
+
+
+    
+
+
+
+
+
+
+
+//해쉬태그 등록 okdk
+router.post('/stat/hashtag/:creatorIdx', authUtil.isLoggedin, async(req, res) => {
+    
+
+    const creatorIdx = parseInt(req.params.creatorIdx);
+    const userIdx = req.decoded.user_idx;
+    const hashtagName = req.body.hashtagName;
+    //해쉬태그 있는지
+    const gethashtagQuery = "SELECT idx FROM hashtag WHERE name = ?";
+    const gethashtagResult = await db.queryParam_Parse(gethashtagQuery, [hashtagName]);
+
+    
+    if(gethashtagResult[0][0]){
+        let hashtagIdx_json = JSON.parse(JSON.stringify(gethashtagResult));
+        hashtagIdx = hashtagIdx_json[0][0].idx || null;
+    }else{
+        hashtagIdx = null;
+    }
+        
+
+     if(!hashtagIdx || !gethashtagResult[0][0]){//해쉬태그 없는 경우 //해쉬 태그 
+
+        const insertHashtagQuery = "INSERT INTO hashtag(name) VALUES(?)";
+        const insertHashtagResult = await db.queryParam_Parse(insertHashtagQuery,[hashtagName]);
+
+        if(insertHashtagResult[0].insertId < 1)
+        {
+            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.STAT_HASHTAG_INSERT_ERROR));
+        }
+        else{
+            const insertCreatorHashtagQuery = "INSERT INTO creator_hashtag(creator_idx, hashtag_idx) VALUES(?, ?)";
+            const insertCreatorHashtagResult = await db.queryParam_Parse(insertCreatorHashtagQuery,[creatorIdx,insertHashtagResult[0].insertId]);
+
+         
+            if(!insertCreatorHashtagResult)
+            {
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.STAT_HASHTAG_INSERT_ERROR));
+            }
+            else{
+                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.STAT_HASHTAG_INSERT_SUCCESS));
             }
 
-    });
+
+        }
+            
+    }else{//해쉬태그 있는 경우 //creator_hashtag에만 등록
+        const insertStatHashtagQuery = "INSERT INTO creator_hashtag(creator_idx, hashtag_idx) VALUES(?, ?)";
+        const insertStatHashtagResult = await db.queryParam_Parse(insertStatHashtagQuery,[creatorIdx,hashtagIdx]);
+
+        if(!insertStatHashtagResult)
+        {
+            return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.STAT_HASHTAG_INSERT_ERROR));
+        }
+        else{
+
+            return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.STAT_HASHTAG_INSERT_SUCCESS));
+        }
+
+    }
+    
 });
 
 

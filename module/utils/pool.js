@@ -50,7 +50,7 @@ module.exports = { // 두 개의 메소드 module화
            
 
             result = await connection.query(query, value) || null;
-
+            console.log(query);
         } catch (err) {
             //console.log(err);
             connection.rollback(() => {});
