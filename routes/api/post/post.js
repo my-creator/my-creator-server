@@ -102,6 +102,8 @@ router.get('/hot', async (req, res) => {
     FROM ( post p INNER JOIN board b ON b.idx = p.board_idx) 
     GROUP BY p.idx
     ORDER BY p.like_cnt DESC LIMIT 5`;  
+
+
     
     const getPostByHotResult = await db.queryParam_None(getPostByHotQuery);
 
@@ -118,12 +120,32 @@ router.get('/hot', async (req, res) => {
 //제목,이름,게시판,썸네일,시간(int) 
 //년,월,일,시간(초빼고
 //일주일 기준 cron !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!일주일 사이 글에서만 
-cron.schedule('0 0 * * tue', () => {
+/*
+SELECT p.idx,p.board_idx,p.user_idx,p.title,p.contents,date_format(p.create_time,'%Y-%m-%d %h:%i'),date_format(p.update_time,'%Y-%m-%d %h:%i'),b.*,u.name
+    FROM ( post p INNER JOIN board b ON b.idx = p.board_idx)
+    INNER JOIN user u ON u.idx = p.user_idx
+    GROUP BY p.idx ORDER BY p.like_cnt DESC
+*/
+
 router.get('/allhot', async (req, res) => { 
-    let getPostByCreateTimeQuery = `SELECT p.idx,p.board_idx,p.user_idx,p.title,p.contents,date_format(p.create_time,'%Y-%m-%d %h:%i'),date_format(p.update_time,'%Y-%m-%d %h:%i'),b.*,u.name
+    let getPostByCreateTimeQuery = `SELECT p.*,b.*,u.name,(SELECT COUNT(r.idx) FROM reply r WHERE r.post_idx = p.idx) AS reply_cnt
     FROM ( post p INNER JOIN board b ON b.idx = p.board_idx)
     INNER JOIN user u ON u.idx = p.user_idx
     GROUP BY p.idx ORDER BY p.like_cnt DESC`;
+
+
+/*
+SELECT  p.*,b.*,(SELECT COUNT(r.idx) FROM reply r WHERE r.post_idx = p.idx) AS reply_cnt
+    FROM ( post p INNER JOIN board b ON b.idx = p.board_idx) 
+    GROUP BY p.idx
+    ORDER BY p.create_time ASC LIMIT 5
+*/
+
+
+    
+
+
+
     const getPostByCreateTimeResult = await db.queryParam_None(getPostByCreateTimeQuery);
 
     //쿼리문의 결과가 실패이면 null을 반환한다
@@ -133,17 +155,22 @@ router.get('/allhot', async (req, res) => {
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_SELECT_SUCCESS, getPostByCreateTimeResult[0]));
     }
 });
-})
 
 
 //전체 최신글 순 조회(성공)(게시판 상관없이) okdk
 //제목,이름,게시판,썸네일,시간(int)
 //년,월,일,시간(초빼고)
 router.get('/allnew', async (req, res) => { 
-    let getPostByCreateTimeQuery = `SELECT p.*,b.*,u.name
+    let getPostByCreateTimeQuery = `SELECT p.*,b.*,u.name,(SELECT COUNT(r.idx) FROM reply r WHERE r.post_idx = p.idx) AS reply_cnt
     FROM ( post p INNER JOIN board b ON b.idx = p.board_idx)
     INNER JOIN user u ON u.idx = p.user_idx
     GROUP BY p.idx ORDER BY p.create_time DESC`;
+
+    /*
+    SELECT p.*,b.*,u.name,(SELECT COUNT(r.idx) FROM reply r WHERE r.post_idx = p.idx) AS reply_cnt
+    FROM ( post p INNER JOIN board b ON b.idx = p.board_idx)
+    INNER JOIN user u ON u.idx = p.user_idx
+    GROUP BY p.idx ORDER BY p.like_cnt DESC*/
 
     const getPostByCreateTimeResult = await db.queryParam_None(getPostByCreateTimeQuery);
 
