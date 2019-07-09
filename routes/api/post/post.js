@@ -264,148 +264,221 @@ router.get('/search', async (req, res) => {
 //토큰 :eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZHgiOjEsImdyYWRlIjoiQURNSU4iLCJuYW1lIjoi66qF64uk7JewIiwiaWF0IjoxNTYyMDU0NTI0LCJleHAiOjE1NjMyNjQxMjQsImlzcyI6InlhbmcifQ.MccUElA8iA4HRcz4IN4mBIxpqoa9i6PUyPbv2aTwT8w
 
 //'/:boardIdx'
-//게시글 좋아요
-//왜 안되냐!!!!!!!!!!!!!!!!!!
+//게시글 좋아요 okdk
 router.post('/:postIdx/like', authUtil.isLoggedin,  async(req, res) => {
-    const postIdx = req.params.postIdx;
-    const userIdx =req.decoded.user_idx;
-    const params = [postIdx,userIdx];
+    let postIdx = req.params.postIdx;
+    
+    
     // just check the
-    //let getLikePostQuery  = `SELECT * FROM 'like' WHERE post_idx = '${postIdx}' AND user_idx = '${userIdx}'`;
-    let getLikePostQuery  = `SELECT * FROM 'like' WHERE post_idx = ? AND user_idx = ?`;
-    const getLikePostResult = await db.queryParam_Parse(getLikePostQuery,params);
+    let getLikeBoardQuery  = "SELECT * FROM `like` WHERE post_idx = ? AND user_idx = ?";
+    const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery, [postIdx,req.decoded.user_idx]) || null;
 
-//user 12 post 43
-        console.log("getLIkePostResult");
-        console.log(getLikePostResult);
+    console.log("aa");
+    console.log(getLikeBoardResult[0].length);//0
+    console.log("bb");
+    console.log(getLikeBoardResult[0]);
 
-    if(!getLikePostResult){//좋아요 안함
+    if(getLikeBoardResult[0].length != 0){//이미 즐겨찾기한 상태 -> 걍 놔둠
+        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.POST_LIKE_INSERT_ERROR));
+    }else{//즐겨찾기 안함 -> like, post
+
         
-//        const postLikeBoardQuery = `INSERT INTO 'like' (post_idx,user_idx) VALUES('${userIdx}', '${postIdx}')`;
-
-       const postLikeBoardQuery = `INSERT INTO 'like' (post_idx,user_idx) VALUES(?, ?)`;
-        const postLikeBoardResult = await db.queryParam_Parse(postLikeBoardQuery,params);
-
-        console.log("postLikeBoardResult");
+        const postLikeBoardQuery = "INSERT INTO `like` (user_idx,post_idx) VALUES(?, ?)";
+        const postLikeBoardResult = await db.queryParam_Parse(postLikeBoardQuery, [req.decoded.user_idx,postIdx]);
+        
+        console.log("cc");
         console.log(postLikeBoardResult);
+
+
             if (!postLikeBoardResult) {
-                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_INSERT_ERROR));
-            }else if(postLikeBoardResult === 0){
+//error
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_LIKE_INSERT_ERROR));
+            }else if(postLikeBoardResult[0].length === 0){
+            //error    
                 res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USERINFO_SELECT_FAIL));
             }
             else{
+            //update
+
                 let putPostLikeQuery  = "UPDATE post SET like_cnt = like_cnt + 1 WHERE idx = ?";
                 const putPostLikeResult = await db.queryParam_Parse(putPostLikeQuery, [postIdx]);
+
+                if(!putPostLikeResult){
+                    res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USERINFO_SELECT_FAIL));                    
+                }else{
+                    res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_LIKE_INSERT_SUCCESS));
+                }
                 
-                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_LIKE_INSERT_SUCCESS));
             }
 
-    }else{
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USERINFO_SELECT_FAIL));
     }
 
 });
-
-
-
-
 
 
 //게시글 좋아요 취소
-//왜 안되냐!!!!!!!!!!!!!!!!!!
-router.delete(':/postIdx/unlike', authUtil.isLoggedin, async(req, res) => {
-   const {boardIdx} = req.params;
-    const params = [boardIdx,req.decoded.user_idx];
-
-
-    console.log("liketest\n");
-    console.log(params);
-    // just check the
-    let getLikeBoardQuery  = "SELECT * FROM board_like WHERE board_idx = ? AND user_idx = ?";
-    const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery, params);
-
-    if(!getLikeBoardResult){
-        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.BOARD_LIKE_SELECT_ERROR));
-    }else if(getLikeBoardResult.length != 0){//이미 즐겨찾기한 상태
-        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.BOARD_LIKE_DELETE_ERROR));
-    }
-
-    const deleteLikeQuery = "DELETE FROM board_like WHERE board_idx = ? AND user_idx = ?";
-    const deleteLikeResult = await db.queryParam_Parse(deleteLikeQuery, params);
-
-
-    deleteLikeResult.then((data)=>{
-        if (!data) {
-            return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_DELETE_ERROR));
-        }else{
-            return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_DELETE_ERROR));
-        }
+//okdk
+router.post('/:postIdx/unlike', authUtil.isLoggedin,  async(req, res) => {
+    let postIdx = req.params.postIdx;
     
-    });
-});
-
-//게시글 싫어요
-//왜 안되냐!!!!!!!!!!!!!!!!!!
-router.post('/:postIdx/hate', authUtil.isLoggedin,  async(req, res) => {
-    const {postIdx} = req.params;
-    const params = [postIdx,req.decoded.user_idx];
-
-    console.log("liketest\n");
-    console.log(params);
+    
     // just check the
     let getLikeBoardQuery  = "SELECT * FROM `like` WHERE post_idx = ? AND user_idx = ?";
-    const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery, params);
+    const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery, [postIdx,req.decoded.user_idx]) || null;
 
-    if(!getLikeBoardResult){
-        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.BOARD_LIKE_SELECT_ERROR));
-    }else if(getLikeBoardResult.length != 0){//이미 즐겨찾기한 상태
-        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.BOARD_LIKE_INSERT_ERROR));
+    console.log("aa");
+    console.log(getLikeBoardResult[0].length);//0
+    console.log("bb");
+    console.log(getLikeBoardResult[0]);
+
+    if(getLikeBoardResult[0].length != 0){//이미 즐겨찾기한 상태 -> update post / delete like
+
+
+        const postUnlikeBoardQuery = "DELETE FROM `like` WHERE  user_idx = ? AND post_idx = ?";
+        const postUnlikeBoardResult = await db.queryParam_Parse(postUnlikeBoardQuery, [req.decoded.user_idx,postIdx]);
+        
+        console.log("cc");
+        console.log(postUnlikeBoardResult);
+
+
+            if (!postUnlikeBoardResult) {
+//error
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_LIKE_DELETE_ERROR));
+            }else if(postUnlikeBoardResult[0].length === 0){
+            //error    
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USERINFO_SELECT_FAIL));
+            }
+            else{
+            //update
+
+                let putPostUnlikeQuery  = "UPDATE post SET like_cnt = like_cnt - 1 WHERE idx = ?";
+                const putPostUnlikeResult = await db.queryParam_Parse(putPostUnlikeQuery, [postIdx]);
+
+                if(!putPostUnlikeResult){
+                    res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USERINFO_SELECT_FAIL));                    
+                }else{
+                    res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_LIKE_DELETE_SUCCESS));
+                }
+                
+            }
+
+
+            
+
+
+    }else{//즐겨찾기 안함 -> like, post
+        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.POST_LIKE_DELETE_ERROR));
+
     }
 
-    const postLikeBoardQuery = "INSERT INTO `like`(post_idx,user_idx) VALUES(?, ?)";
-    const postLikeBoardResult = db.queryParam_Parse(postLikeBoardQuery, params);
+});
+//게시글 싫어요 
+router.post('/:postIdx/hate', authUtil.isLoggedin,  async(req, res) => {
+    let postIdx = req.params.postIdx;
     
-    postLikeBoardResult.then((data)=>{
-        if (!data) {
-            return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_INSERT_ERROR));
-        }else{
-            return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_INSERT_SUCCESS));
-        }
     
-    });
+    // just check the
+    let getHateBoardQuery  = "SELECT * FROM `hate` WHERE post_idx = ? AND user_idx = ?";
+    const getHateBoardResult = await db.queryParam_Parse(getHateBoardQuery, [postIdx,req.decoded.user_idx]) || null;
+
+    console.log("aa");
+    console.log(getHateBoardResult[0].length);//0
+    console.log("bb");
+    console.log(getHateBoardResult[0]);
+
+    if(getHateBoardResult[0].length != 0){//이미 즐겨찾기한 상태 -> 걍 놔둠
+        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.POST_HATE_INSERT_ERROR));
+    }else{//즐겨찾기 안함 -> like, post
+
+        
+        const postHateBoardQuery = "INSERT INTO `hate` (user_idx,post_idx) VALUES(?, ?)";
+        const postHateBoardResult = await db.queryParam_Parse(postHateBoardQuery, [req.decoded.user_idx,postIdx]);
+        
+        console.log("cc");
+        console.log(postHateBoardResult);
+
+
+            if (!postHateBoardResult) {
+//error
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_HATE_INSERT_ERROR));
+            }else if(postHateBoardResult[0].length === 0){
+            //error    
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USERINFO_SELECT_FAIL));
+            }
+            else{
+            //update
+
+                let putPostHateQuery  = "UPDATE post SET hate_cnt = hate_cnt + 1 WHERE idx = ?";
+                const putPostHateResult = await db.queryParam_Parse(putPostHateQuery, [postIdx]);
+
+                if(!putPostHateResult){
+                    res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USERINFO_SELECT_FAIL));                    
+                }else{
+                    res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_HATE_INSERT_SUCCESS));
+                }
+                
+            }
+
+    }
+
 });
 
-//게시글 싫어요 취소
-//왜 안되냐!!!!!!!!!!!!!!!!!!
-router.delete(':/postIdx/unhate', authUtil.isLoggedin, async(req, res) => {
-   const {boardIdx} = req.params;
-    const params = [boardIdx,req.decoded.user_idx];
 
-
-    console.log("liketest\n");
-    console.log(params);
+//게시글 싫어요  취소
+//okdk
+router.post('/:postIdx/unhate', authUtil.isLoggedin,  async(req, res) => {
+    let postIdx = req.params.postIdx;
+    
+    
     // just check the
-    let getLikeBoardQuery  = "SELECT * FROM `like` WHERE board_idx = ? AND user_idx = ?";
-    const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery, params);
+    let getLikeBoardQuery  = "SELECT * FROM `hate` WHERE post_idx = ? AND user_idx = ?";
+    const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery, [postIdx,req.decoded.user_idx]) || null;
 
-    if(!getLikeBoardResult){
-        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.BOARD_LIKE_SELECT_ERROR));
-    }else if(getLikeBoardResult.length != 0){//이미 즐겨찾기한 상태
-        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.BOARD_LIKE_DELETE_ERROR));
+    console.log("aa");
+    console.log(getLikeBoardResult[0].length);//0
+    console.log("bb");
+    console.log(getLikeBoardResult[0]);
+
+    if(getLikeBoardResult[0].length != 0){//이미 즐겨찾기한 상태 -> update post / delete like
+
+
+        const postUnlikeBoardQuery = "DELETE FROM `hate` WHERE  user_idx = ? AND post_idx = ?";
+        const postUnlikeBoardResult = await db.queryParam_Parse(postUnlikeBoardQuery, [req.decoded.user_idx,postIdx]);
+        
+        console.log("cc");
+        console.log(postUnlikeBoardResult);
+
+
+            if (!postUnlikeBoardResult) {
+//error
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_HATE_DELETE_ERROR));
+            }else if(postUnlikeBoardResult[0].length === 0){
+            //error    
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USERINFO_SELECT_FAIL));
+            }
+            else{
+            //update
+
+                let putPostUnlikeQuery  = "UPDATE post SET like_cnt = like_cnt - 1 WHERE idx = ?";
+                const putPostUnlikeResult = await db.queryParam_Parse(putPostUnlikeQuery, [postIdx]);
+
+                if(!putPostUnlikeResult){
+                    res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USERINFO_SELECT_FAIL));                    
+                }else{
+                    res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_HATE_DELETE_SUCCESS));
+                }
+                
+            }
+
+
+            
+
+
+    }else{//즐겨찾기 안함 -> like, post
+        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.POST_HATE_DELETE_ERROR));
+
     }
 
-    const deleteLikeQuery = "DELETE FROM `like` WHERE board_idx = ? AND user_idx = ?";
-    const deleteLikeResult = await db.queryParam_Parse(deleteLikeQuery, params);
-
-
-    deleteLikeResult.then((data)=>{
-        if (!data) {
-            return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_DELETE_ERROR));
-        }else{
-            return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_DELETE_ERROR));
-        }
-    
-    });
 });
 
 
@@ -541,7 +614,6 @@ router.post('/', authUtil.isLoggedin, upload.array('imgs'), async (req, res) => 
 
 
 // 게시글 수정
-//익명!!!!!!!!!!!!!!!!!!!!!
 router.put('/:postIdx', authUtil.isLoggedin, upload.array('imgs'),async(req, res) => {
     const postIdx = req.params.postIdx;
 
@@ -578,7 +650,6 @@ router.put('/:postIdx', authUtil.isLoggedin, upload.array('imgs'),async(req, res
 
 
 // 게시글 삭제
-//익명!!!!!!!!!!!!!!!
 router.delete('/:postIdx', authUtil.isLoggedin,  async(req, res) => {
     const postIdx = req.params.postIdx;
 
