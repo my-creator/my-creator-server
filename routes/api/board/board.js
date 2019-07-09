@@ -254,21 +254,22 @@ router.delete('/:boardIdx/unlike', authUtil.isLoggedin,  async(req, res) => {
 
 
 //크리에이터 팬 게시판 조회
-//디비 수정 !!!!!!!!!!!!
 router.get('/creator/:creatorIdx', async (req, res) => {
  const {creatorIdx} =req.params;
 //post글 board_idx  = board idx name -> 
-    let getCreatorBoardQuery = `SELECT b.idx, b.name,b.type FROM board b 
-    INNER JOIN board_creator bc ON bc.board_idx = b.idx 
-    WHERE b.type = 'creator' AND creator_idx = ?`;
+    let getCreatorBoardQuery = `SELECT b.*
+FROM board b 
+INNER JOIN creator c ON c.idx = b.creator_idx 
+WHERE b.type = 'creator' AND b.creator_idx = ?`;
     
     const getCreatorBoardResult = await db.queryParam_Parse(getCreatorBoardQuery,[creatorIdx]);
+    console.log(getCreatorBoardResult[0].length);
 
     //쿼리문의 결과가 실패이면 null을 반환한다
     if (!getCreatorBoardResult) { //쿼리문이 실패했을 때
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_BOARD_SELECT_ERROR));
-   } else if(getCreatorBoardResult.length === 0){
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_BOARD_SELECT_ERROR));
+   } else if(getCreatorBoardResult[0].length === 0){
+        res.status(200).send(defaultRes.successTrue(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_BOARD_SELECT_NOTHING,getCreatorBoardResult[0]));
     }else{ //쿼리문이 성공했을 때
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_BOARD_SELECT_SUCCESS,getCreatorBoardResult[0]));
     }
