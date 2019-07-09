@@ -12,10 +12,12 @@ const authUtil = require('../module/utils/authUtils');
 const jwtUtil = require('../module/utils/jwt');
 
 //로그인 ok's
-router.post('/signin', async (req, res) => {
-    const { id, password } = req.body;
 
-    if (!id || !password) {
+router.post('/signin', async (req, res) => {
+
+ const {id, passwd} = req.body;
+
+    if (!id || !passwd) {
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
     }
 
@@ -27,15 +29,15 @@ router.post('/signin', async (req, res) => {
     } else if (getMembershipByIdResult.length === 0) {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.SIGN_IN_FAIL));
     } else { //쿼리문이 성공했을 때
+        
+        const firstMembershipByIdResult=JSON.parse(JSON.stringify(getMembershipByIdResult[0]));
 
-        const firstMembershipByIdResult = JSON.parse(JSON.stringify(getMembershipByIdResult[0]));
-
-        encrypt.getHashedPassword(password, firstMembershipByIdResult[0].salt, res, async (hashedPassword) => {
-
+        encrypt.getHashedPassword(passwd, firstMembershipByIdResult[0].salt, res, async (hashedPassword) => {
+            
             if (firstMembershipByIdResult[0].passwd !== hashedPassword) {
                 // 비밀번호가 틀렸을 경우
                 res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.SIGN_IN_FAIL));
-            } else {
+            } else { 
                 // 로그인 정보가 일치할 때
                 // password, salt 제거
                 delete firstMembershipByIdResult.passwd;
@@ -43,7 +45,7 @@ router.post('/signin', async (req, res) => {
 
                 // 토큰 발급
                 const jwtToken = jwtUtil.sign(firstMembershipByIdResult);
-                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATE_TOKEN, { "token": jwtToken }));
+                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATE_TOKEN, { "token" : jwtToken}));
             }
         });
     }
