@@ -135,5 +135,13 @@ module.exports = {
     COMMENT_SELECT_ERROR:"댓글 조회 에러",
     COMMENT_SELECT_SUCCESS:"댓글 조회 성공",
     COMMENT_DELETE_SUCCESS:"댓글 삭제 성공",
-    COMMENT_DELETE_ERROR:"댓글 삭제 에러"
+    COMMENT_DELETE_ERROR:"댓글 삭제 에러",
+    CREATOR_SELECT_STAT_ERROR:"크리에이터 프로필 스탯 조회 에러",
+    CREATOR_SELECT_STAT_SUCCESS:"크리에이터 프로필 스탯 조회 성공",
+    CREATOR_SELECT_STAT_DETAIL_ERROR:"크리에이터 스탯 상세 등록창 조회 에러",
+    CREATOR_SELECT_STAT_DETAIL_SUCCESS:"크리에이터 스탯 상세 등록창 조회 성공",
+    STAT_INSERT_ERROR:"스탯 등록 에러",
+    STAT_INSERT_SUCCESS:"스탯 등록 성공",
+    STAT_HASHTAG_INSERT_ERROR:"해쉬태그 등록 에러",
+    STAT_HASHTAG_INSERT_SUCCESS:"해쉬태그 등록 성공"
 };
