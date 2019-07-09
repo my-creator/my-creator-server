@@ -44,7 +44,7 @@ function update(snippet, statistics, idx){
     const createTime = publishedAt.replace('Z','');
     const params = [title, description, createTime, viewCount, subscriberCount, viewCount, subscriberCount, idx];
 
-    console.log(title);
+    //console.log(title);
     // console.log(description);
     // console.log(createTime);
     // console.log(thumbnail);
@@ -52,6 +52,23 @@ function update(snippet, statistics, idx){
     // console.log(subscriberCount);
     // console.log(videoCount);
 
+    
+    //랭킹부분 구독자수별, 조회수별 일간핫 랭킹 구하기 위한 스케줄링 
+    // yesterday = today
+    // update하기
+    // const updateYesterdayQuery = `UPDATE creator SET yesterday_youtube_subscriber_cnt=?, yesterday_youtube_view_cnt=?`
+    // const todayData = [subscriberCount, viewCount];
+    // const updateCreatorsResult = db.queryParam_Parse(updateYesterdayQuery, todayData)
+    //     .then(result => {
+    //         console.log('then');
+    //         console.log(result);
+    //     })
+    //     .catch(err => {
+    //         console.log(err);
+    //     });
+
+
+    //today_youtube_view_cnt , today_youtube_subscriber_cnt
     const updateCreatorQuery = "UPDATE creator SET name=?, contents=?, create_time=?, youtube_view_cnt=?, youtube_subscriber_cnt=?,\
                 view_grade_idx = (SELECT idx FROM view_grade vg WHERE vg.view_cnt <= ? ORDER BY idx DESC LIMIT 1),\
                 follower_grade_idx = (SELECT idx FROM follower_grade fg WHERE fg.follower_cnt <= ? ORDER BY idx DESC LIMIT 1)\
