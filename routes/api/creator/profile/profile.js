@@ -25,9 +25,9 @@ router.get('/:creatorIdx', async (req, res) => {
     const { creatorIdx } = req.params;
 
     const getCreatorProfileQuery = `SELECT c.idx AS 'creator_idx',c.view_grade_idx,c.follower_grade_idx,c.profile_url,c.name AS'creator_name',c.youtube_subscriber_cnt,
-c.youtube_view_cnt,c.current_rank,c.last_rank,c.follower_cnt,c.contents,c.channel_id,date_format(c.create_time,'%Y-%m-%d %h:%i') AS 'creator_create_time',c.search_cnt,
+c.youtube_view_cnt,c.follower_cnt,c.contents,c.channel_id,date_format(c.create_time,'%Y-%m-%d %h:%i') AS 'creator_create_time',
 ca.name AS 'category_name',ca.idx AS 'category_idx', 
-vg.name AS 'view_grame_name',vg.img_url AS 'view_grade_img_url',vg.view_cnt AS 'view_grade_view_cnt',
+vg.name AS 'view_grade_name',vg.img_url AS 'view_grade_img_url',vg.view_cnt AS 'view_grade_view_cnt',
 fg.name AS 'follower_grade_name',fg.level AS 'follower_grade_level',fg.img_url AS 'follower_grade_img_url',fg.follower_cnt AS 'follower_grade_follower_cnt',
 b.idx AS 'board_idx' ,b.name AS 'board_name',b.type AS 'board_type'
     FROM creator c 
@@ -39,19 +39,99 @@ b.idx AS 'board_idx' ,b.name AS 'board_name',b.type AS 'board_type'
     WHERE c.idx = ?`;
     const getCreatorProfileResult = await db.queryParam_Parse(getCreatorProfileQuery, [creatorIdx]);
 
+//    console.log(getCreatorProfileResult);
 //    const result = getCreatorProfileResult[0];
     const result = JSON.parse(JSON.stringify(getCreatorProfileResult[0][0]));
-    console.log("Resutl");
-    console.log(result);
+    //console.log("Resutl");
+//    console.log(result);
 
     const category_json = JSON.parse(JSON.stringify(getCreatorProfileResult));
     const categoryIdx = category_json[0][0].category_idx;
+    const youtube_subscriber_cnt = category_json[0][0].youtube_subscriber_cnt;
+    const follower_cnt = category_json[0][0].follower_grade_follower_cnt;
+    const follower_grade_idx = category_json[0][0].follower_grade_idx;
+    const follower_grade_level = category_json[0][0].follower_grade_level;
+    const follower_grade_name = category_json[0][0].follower_grade_name;
 
+    const youtube_view_cnt = category_json[0][0].youtube_view_cnt;
+    const view_grade_name = category_json[0][0].view_grade_name;
+
+
+
+    let flev = 0;
     if (!result) {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_PROFILE_ERROR));
     } else {
 //        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_SELECT_PROFILE_SUCCESS, getCreatorPrifileResult));
-  
+        
+
+        switch (follower_grade_name){
+        case  "브론즈":
+        flev = (youtube_subscriber_cnt - follower_cnt)/200*100;
+            result["back_lank_exp"] = follower_cnt+99;
+            break;
+        case "실버" :
+            result["back_lank_exp"] = follower_cnt+999;
+            flev = (youtube_subscriber_cnt - follower_cnt)/2000*100;
+            break;
+        case "골드":
+        flev = (youtube_subscriber_cnt - follower_cnt)/20000*100;
+            result["back_lank_exp"] = follower_cnt+9999;
+            break;
+        case "플래티넘":
+            result["back_lank_exp"] = follower_cnt+99999;
+            flev = (youtube_subscriber_cnt - follower_cnt)/200000*100;
+            break;
+        case "다이아" :
+            result["back_lank_exp"] = follower_cnt+999999;
+             flev = (youtube_subscriber_cnt - follower_cnt)/2000000*100;
+            break;
+        default:
+            flev = 0;
+            result["back_lank_exp"] = 0;
+        
+    }
+
+
+    let flex = 0;
+    switch (view_grade_name){
+        case  "F":
+            flex = youtube_view_cnt/100000*100;
+            result["back_lank2_exp"] = 100000;
+            break;
+        case "D" :
+            flex = youtube_view_cnt/9000000*100;
+            result["back_lank2_exp"] = 1000000;
+            break;
+        case "C":
+            flex = youtube_view_cnt/90000000*100;
+            result["back_lank2_exp"] = 10000000;
+            break;
+        case "A":
+            flex = youtube_view_cnt/900000000*100;
+            result["back_lank2_exp"] = 100000000;
+            break;
+        default :
+            flev = 0;
+            result["back_lank2_exp"] = 0;
+           
+    }
+
+
+
+            //1등급이면 *2
+            if(follower_grade_level  === 1){
+                flev = flev*2;
+            }
+
+            //flev /= 10000;
+            console.log("flev");
+            console.log(flev);
+            result["front_lank_exp"]=youtube_subscriber_cnt;
+            result["front_lank2_exp"]=youtube_view_cnt;
+            result["follower_grade_percent"]= parseInt(flev);
+            
+            result["view_grade_percent"]=parseInt(flex);
   //특정 카테고리별 크리에이터들 리스트
     const getCreatorsQuery=`SELECT cc.creator_idx ,c.*
     FROM creator_category cc 
