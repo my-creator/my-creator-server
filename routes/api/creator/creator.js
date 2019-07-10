@@ -122,6 +122,7 @@ router.get('/:creatorIdx/newvideo/three', async (req, res) => {
 
 //!!!랭킹!!!!!!!!!! 
 
+//WHERE NOW() >= date_add(now(), interval -1 day) 
 //1. 전체 크리에이터 중 전체 구독자수 랭킹
 router.get('/all/subscribe/allrank', async (req, res) => {
     const getCratorAllRankQuery = `SELECT c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
@@ -138,6 +139,24 @@ router.get('/all/subscribe/allrank', async (req, res) => {
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_LIST_BY_CATEGORY_SELECT_SUCCESS, getCratorAllRankResult[0]));
     }
 });
+
+//2. 전체 크리에이터 중 일간핫 구독자수 랭킹
+router.get('/all/subscribe/hotrank', async (req, res) => {
+    const getCategoryIdxQuery = `SELECT c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
+                                FROM creator c
+                                INNER JOIN creator_category cc ON cc.creator_idx = c.idx
+                                INNER JOIN category ccc ON ccc.idx = cc.category_idx
+                                INNER JOIN follower_grade fg ON fg.idx = c.follower_grade_idx
+                                ORDER BY c.youtube_subscriber_cnt DESC LIMIT 100`;
+    const getCreatorCategoryResult = await db.queryParam_None(getCategoryIdxQuery);
+
+    if (!getCreatorCategoryResult) {
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_LIST_BY_CATEGORY_SELECT_ERROR));
+    } else {
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_LIST_BY_CATEGORY_SELECT_SUCCESS, getCreatorCategoryResult[0]));
+    }
+});
+
 
 //2. 전체 크리에이터 중 일간핫 구독자수 랭킹
 router.get('/all/subscribe/hotrank', async (req, res) => {
@@ -210,7 +229,6 @@ router.get('/:categoryIdx/subscribe/allrank', async (req, res) => {
     }
 });
 
-
 //6. 카테고리별 크리에이터 중 일간핫 구독자수 랭킹 
 router.get('/:categoryIdx/subscribe/hotrank', async (req, res) => {
     const { categoryIdx } = req.params;
@@ -223,6 +241,18 @@ router.get('/:categoryIdx/subscribe/hotrank', async (req, res) => {
                                 ORDER BY c.youtube_subscriber_cnt DESC`;
     const getCreatorCategoryResult = await db.queryParam_None(getCategoryIdxQuery);
 
+
+//6. 카테고리별 크리에이터 중 일간핫 구독자수 랭킹 
+router.get('/:categoryIdx/subscribe/hotrank', async (req, res) => {
+    const { categoryIdx } = req.params;
+    const getCategoryIdxQuery = `SELECT c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
+                                FROM creator c
+                                INNER JOIN creator_category cc ON cc.creator_idx = c.idx
+                                INNER JOIN category ccc ON ccc.idx = cc.category_idx
+                                INNER JOIN follower_grade fg ON fg.idx = c.follower_grade_idx
+                                WHERE ccc.idx = '${categoryIdx}'
+                                ORDER BY c.youtube_subscriber_cnt DESC`;
+    const getCreatorCategoryResult = await db.queryParam_None(getCategoryIdxQuery);
     if (!getCreatorCategoryResult) {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_LIST_BY_CATEGORY_SELECT_ERROR));
     } else {
