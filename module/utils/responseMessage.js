@@ -162,5 +162,6 @@ module.exports = {
     STAT_HASHTAG_INSERT_SUCCESS: "해쉬태그 등록 성공",
     BOARD_UNLIKE_SELECT_ERROR: "즐겨찾기 하지 않은 게시판 리스트 조회 에러",
     BOARD_UNLIKE_SELECT_SUCCESS: "즐겨찾기 하지 않은 게시판 리스트 조회 성공",
-    GET_BOARD_SEARCH_NOTHING: "게시판 검색 결과가 없습니다."
+    GET_BOARD_SEARCH_NOTHING: "게시판 검색 결과가 없습니다.",
+    POST_SELECT_NOTHING:"게시글 상세 조회 결과가 없습니다."
 };
