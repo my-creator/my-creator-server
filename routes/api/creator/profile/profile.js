@@ -24,7 +24,9 @@ const jwtUtil = require('../../../../module/utils/jwt');
 router.get('/:creatorIdx', async (req, res) => {
     const { creatorIdx } = req.params;
 
-    const getCreatorProfileQuery = `SELECT c.*,ca.name AS 'category_name',ca.idx AS 'category_idx', 
+    const getCreatorProfileQuery = `SELECT c.idx AS 'creator_idx',c.view_grade_idx,c.follower_grade_idx,c.profile_url,c.name AS'creator_name',c.youtube_subscriber_cnt,
+c.youtube_view_cnt,c.current_rank,c.last_rank,c.follower_cnt,c.contents,c.channel_id,date_format(c.create_time,'%Y-%m-%d %h:%i') AS 'creator_create_time',c.search_cnt,
+ca.name AS 'category_name',ca.idx AS 'category_idx', 
 vg.name AS 'view_grame_name',vg.img_url AS 'view_grade_img_url',vg.view_cnt AS 'view_grade_view_cnt',
 fg.name AS 'follower_grade_name',fg.level AS 'follower_grade_level',fg.img_url AS 'follower_grade_img_url',fg.follower_cnt AS 'follower_grade_follower_cnt',
 b.idx AS 'board_idx' ,b.name AS 'board_name',b.type AS 'board_type'

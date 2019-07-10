@@ -17,32 +17,95 @@ const cron = require('node-cron');
 //게시판별 게시글 리스트 조회 okdk
 //인기글은 HOT배너//좋아요수 기준
 //썸네일(기본/게시글 속 사진), 제목, 등록유저,게시판이름,게시글 등록 시간    
-
+//시간!!!!!!!!!
+//3개 핫배너 붙는거
 router.get('/listhot/:boardIdx', async (req, res) => {
  const boardIdx = req.params.boardIdx;
-let getPosthotQuery  = "SELECT * FROM post WHERE board_idx = ? ORDER BY like_cnt DESC LIMIT 3 ";//인기글 1로 나머지 다 0으로 / 시간 순서 최신순이 위에 
+let getPosthotQuery  = `SELECT p.idx, p.board_idx,p.user_idx,p.title,p.contents,
+date_format(p.create_time,'%Y-%m-%d %h:%i') AS 'create_time', date_format(p.update_time,'%Y-%m-%d %h:%i') AS 'update_time',
+p.view_cnt,p.like_cnt,p.hate_cnt,p.is_anonymous,p.image_cnt,p.video_cnt,p.thumbnail_url
+FROM post p
+WHERE p.board_idx = ?
+ORDER BY p.like_cnt DESC LIMIT 3`;//인기글 1로 나머지 다 0으로 / 시간 순서 최신순이 위에 
     const getPosthotResult = await db.queryParam_Parse(getPosthotQuery,boardIdx);
-    
+        
+        console.log(getPosthotResult[0]);
+        let anss = getPosthotResult[0];
+        console.log("Aa");
+        console.log(anss.length); 
+        for(var i = 0;i<anss.length;i++){
+            anss[i]["hot_image"] =1;    
+        }
+        
+
+        console.log("kz");
+        console.log(anss); 
     //쿼리문의 결과가 실패이면 null을 반환한다
     if (!getPosthotResult || getPosthotResult[0].length === 0) { //쿼리문이 실패했을 때
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_SELECT_ERROR));
     } else{
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_SELECT_SUCCESS,getPosthotResult[0]));
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_SELECT_SUCCESS,anss));
     }
 });
 
-//나머지 최신글 API 2개로 나누기 okdk
+//나머지 최신글 API 2개로 나누기 
+//
+/*
+
+SELECT * FROM post WHERE board_idx = 11 
+AND idx NOT IN (45,47,46)
+ORDER BY create_time DESC;
+*/
 router.get('/list/:boardIdx', async (req, res) => {
     const boardIdx = req.params.boardIdx;  
-    let getPostQuery  = "SELECT * FROM post WHERE board_idx = ? ORDER BY create_time DESC";//인기글 1로 나머지 다 0으로 / 시간 순서 최신순이 위에 
-    const getPostResult = await db.queryParam_Parse(getPostQuery,boardIdx);
-    
-    //쿼리문의 결과가 실패이면 null을 반환한다
-    if (!getPostResult || getPostResult[0].length === 0) { //쿼리문이 실패했을 때
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_SELECT_ERROR));
-    } else { //쿼리문이 성공했을 때
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_SELECT_SUCCESS,getPostResult[0]));
+    const get = `SELECT idx FROM post WHERE board_idx = ?
+ORDER BY like_cnt DESC LIMIT 3`;
+
+    const getResult = await db.queryParam_Parse(get,boardIdx);
+
+
+
+    const ans = JSON.parse(JSON.stringify(getResult[0]));
+        console.log("getResult");
+        console.log(ans.length);//3
+    console.log(ans[0].idx); //45
+    let answer = [];   
+    for(var i = 0;i<ans.length;i++){
+        answer[i] = ans[i].idx;
     }
+    
+    console.log(answer);//45,47,46
+
+    if(!getResult){
+
+    }else{
+        console.log("22");
+        let getPostQuery  = `SELECT p.idx, p.board_idx,p.user_idx,p.title,p.contents,
+date_format(p.create_time,'%Y-%m-%d %h:%i') AS 'create_time', date_format(p.update_time,'%Y-%m-%d %h:%i') AS 'update_time',
+p.view_cnt,p.like_cnt,p.hate_cnt,p.is_anonymous,p.image_cnt,p.video_cnt,p.thumbnail_url FROM post p 
+WHERE idx NOT IN (?)
+AND p.board_idx = ? 
+ORDER BY p.create_time DESC`;//인기글 1로 나머지 다 0으로 / 시간 순서 최신순이 위에 
+    const getPostResult = await db.queryParam_Parse(getPostQuery,[answer,boardIdx]);
+    
+    let aaaa = getPostResult[0];
+    for(var i = 0;i<aaaa.length;i++){
+        aaaa[i]["hot_image"] =0;    
+    }
+
+    console.log("aaaa");
+    console.log(aaaa);
+        //쿼리문의 결과가 실패이면 null을 반환한다
+        if (!getPostResult || getPostResult[0].length === 0) { //쿼리문이 실패했을 때
+            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_SELECT_ERROR));
+        } else { //쿼리문이 성공했을 때
+            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_SELECT_SUCCESS,aaaa));
+        }
+    }
+
+
+
+    
 });
 
 
@@ -51,7 +114,8 @@ router.get('/list/:boardIdx', async (req, res) => {
 
 router.get('/detail/:postIdx', async (req, res) => {
  const {postIdx} = req.params;
-    let getPostQuery  = `SELECT p.*, u.id, u.nickname, u.profile_url , COUNT(r.idx) AS 'reply_cnt' 
+    let getPostQuery  = `SELECT p.idx,p.board_idx,p.user_idx,p.title,p.contents,date_format(p.create_time,'%Y-%m-%d %h:%i') 
+AS 'create_time',p.is_anonymous, u.id, u.nickname, u.profile_url , COUNT(r.idx) AS 'reply_cnt' 
     FROM post p 
     INNER JOIN user u ON u.idx = p.user_idx
     INNER JOIN reply r ON p.idx = r.post_idx
@@ -61,7 +125,7 @@ router.get('/detail/:postIdx', async (req, res) => {
     console.log(getPostResult);
     console.log(getPostResult[0].length);
     //쿼리문의 결과가 실패이면 null을 반환한다
-    if (!getPostResult || getPostResult[0].length == 1) { //쿼리문이 실패했을 때
+    if (!getPostResult) { //쿼리문이 실패했을 때
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_SELECT_ERROR));
     } else { //쿼리문이 성공했을 때
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_SELECT_SUCCESS, getPostResult[0]));
@@ -71,7 +135,9 @@ router.get('/detail/:postIdx', async (req, res) => {
 //커뮤니티 창 작은 최신글 순 조회(게시판 상관없이 5개만)성공
 //썸네일 추가해야함 okdk
 router.get('/new', async (req, res) => { 
-    const getPostByCreateTimeLimitQuery = `SELECT  p.*,b.*,(SELECT COUNT(r.idx) FROM reply r WHERE r.post_idx = p.idx) AS reply_cnt
+    const getPostByCreateTimeLimitQuery = `SELECT  p.idx, p.board_idx,p.user_idx,p.title,p.contents,
+date_format(p.create_time,'%Y-%m-%d %h:%i') AS 'create_time', date_format(p.update_time,'%Y-%m-%d %h:%i') AS 'update_time',
+p.view_cnt,p.like_cnt,p.hate_cnt,p.is_anonymous,p.image_cnt,p.video_cnt,p.thumbnail_url,b.*,(SELECT COUNT(r.idx) FROM reply r WHERE r.post_idx = p.idx) AS reply_cnt
     FROM ( post p INNER JOIN board b ON b.idx = p.board_idx) 
     GROUP BY p.idx
     ORDER BY p.create_time ASC LIMIT 5`;
@@ -98,7 +164,9 @@ router.get('/new', async (req, res) => {
 //제목추천수,댓글수,등록시간
 //일주일 기준 cron !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 router.get('/hot', async (req, res) => { 
-    let getPostByHotQuery= `SELECT  p.*,b.*,(SELECT COUNT(r.idx) FROM reply r WHERE r.post_idx = p.idx) AS reply_cnt
+    let getPostByHotQuery= `SELECT  p.idx, p.board_idx,p.user_idx,p.title,p.contents,
+date_format(p.create_time,'%Y-%m-%d %h:%i') AS 'create_time', date_format(p.update_time,'%Y-%m-%d %h:%i') AS 'update_time',
+p.view_cnt,p.like_cnt,p.hate_cnt,p.is_anonymous,p.image_cnt,p.video_cnt,p.thumbnail_url,b.*,(SELECT COUNT(r.idx) FROM reply r WHERE r.post_idx = p.idx) AS reply_cnt
     FROM ( post p INNER JOIN board b ON b.idx = p.board_idx) 
     GROUP BY p.idx
     ORDER BY p.like_cnt DESC LIMIT 5`;  
@@ -128,7 +196,9 @@ SELECT p.idx,p.board_idx,p.user_idx,p.title,p.contents,date_format(p.create_time
 */
 
 router.get('/allhot', async (req, res) => { 
-    let getPostByCreateTimeQuery = `SELECT p.*,b.*,u.name,(SELECT COUNT(r.idx) FROM reply r WHERE r.post_idx = p.idx) AS reply_cnt
+    let getPostByCreateTimeQuery = `SELECT p.idx, p.board_idx,p.user_idx,p.title,p.contents,
+date_format(p.create_time,'%Y-%m-%d %h:%i') AS 'create_time', date_format(p.update_time,'%Y-%m-%d %h:%i') AS 'update_time',
+p.view_cnt,p.like_cnt,p.hate_cnt,p.is_anonymous,p.image_cnt,p.video_cnt,p.thumbnail_url,b.*,u.name,(SELECT COUNT(r.idx) FROM reply r WHERE r.post_idx = p.idx) AS reply_cnt
     FROM ( post p INNER JOIN board b ON b.idx = p.board_idx)
     INNER JOIN user u ON u.idx = p.user_idx
     GROUP BY p.idx ORDER BY p.like_cnt DESC`;
@@ -161,7 +231,9 @@ SELECT  p.*,b.*,(SELECT COUNT(r.idx) FROM reply r WHERE r.post_idx = p.idx) AS r
 //제목,이름,게시판,썸네일,시간(int)
 //년,월,일,시간(초빼고)
 router.get('/allnew', async (req, res) => { 
-    let getPostByCreateTimeQuery = `SELECT p.*,b.*,u.name,(SELECT COUNT(r.idx) FROM reply r WHERE r.post_idx = p.idx) AS reply_cnt
+    let getPostByCreateTimeQuery = `SELECT p.idx, p.board_idx,p.user_idx,p.title,p.contents,
+date_format(p.create_time,'%Y-%m-%d %h:%i') AS 'create_time', date_format(p.update_time,'%Y-%m-%d %h:%i') AS 'update_time',
+p.view_cnt,p.like_cnt,p.hate_cnt,p.is_anonymous,p.image_cnt,p.video_cnt,p.thumbnail_url,b.*,u.name,(SELECT COUNT(r.idx) FROM reply r WHERE r.post_idx = p.idx) AS reply_cnt
     FROM ( post p INNER JOIN board b ON b.idx = p.board_idx)
     INNER JOIN user u ON u.idx = p.user_idx
     GROUP BY p.idx ORDER BY p.create_time DESC`;
@@ -191,7 +263,9 @@ router.get('/allnew', async (req, res) => {
 
 router.get('/todayhot', async (req, res) => {
 
-    let getTodayHotPostQuery  = `SELECT p.*,b.*,u.name
+    let getTodayHotPostQuery  = `SELECT p.idx, p.board_idx,p.user_idx,p.title,p.contents,
+date_format(p.create_time,'%Y-%m-%d %h:%i') AS 'create_time', date_format(p.update_time,'%Y-%m-%d %h:%i') AS 'update_time',
+p.view_cnt,p.like_cnt,p.hate_cnt,p.is_anonymous,p.image_cnt,p.video_cnt,p.thumbnail_url,b.*,u.name
     FROM ( post p INNER JOIN board b ON b.idx = p.board_idx)
     INNER JOIN user u ON u.idx = p.user_idx
     WHERE p.create_time >= CURDATE() 
@@ -210,7 +284,9 @@ router.get('/todayhot', async (req, res) => {
 //첫화면 방금 막 올라온 최신글 조회(3개)성공 OKDK
 router.get('/todaynew', async (req, res) => {
 
-    let getTodayHotPostQuery  = `SELECT p.*,b.*,u.name
+    let getTodayHotPostQuery  = `SELECT p.idx, p.board_idx,p.user_idx,p.title,p.contents,
+date_format(p.create_time,'%Y-%m-%d %h:%i') AS 'create_time', date_format(p.update_time,'%Y-%m-%d %h:%i') AS 'update_time',
+p.view_cnt,p.like_cnt,p.hate_cnt,p.is_anonymous,p.image_cnt,p.video_cnt,p.thumbnail_url,b.*,u.name
     FROM ( post p INNER JOIN board b ON b.idx = p.board_idx)
     INNER JOIN user u ON u.idx = p.user_idx
     WHERE p.create_time >= CURDATE() 
@@ -234,16 +310,21 @@ router.get('/todaynew', async (req, res) => {
 router.get('/search', async (req, res) => {
  let {title, contents} = req.query;
 
-    console.log(title);
+    console.log(title,contents);
 
-    let getBoardSearchQuery  = "SELECT * FROM post WHERE"
+
+
+    let getBoardSearchQuery  = `SELECT p.idx, p.board_idx,p.user_idx,p.title,p.contents,
+date_format(p.create_time,'%Y-%m-%d %h:%i') AS 'create_time', date_format(p.update_time,'%Y-%m-%d %h:%i') AS 'update_time',
+p.view_cnt,p.like_cnt,p.hate_cnt,p.is_anonymous,p.image_cnt,p.video_cnt,p.thumbnail_url FROM post p WHERE`
     if(title) getBoardSearchQuery+= ` title LIKE '%${title}%'`;
     if(title && contents) getBoardSearchQuery+= ` OR`;
     if(contents) getBoardSearchQuery+= ` contents LIKE '%${contents}%',`;
     if(contents) getBoardSearchQuery = getBoardSearchQuery.slice(0, getBoardSearchQuery.length-1);
    
-
-
+   
+    console.log("aaaa");
+    console.log(getBoardSearchQuery);
 
 
     
