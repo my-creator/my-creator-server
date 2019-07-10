@@ -171,78 +171,30 @@ router.post('/suggestion', /*authUtil.isLoggedin,*/ async(req, res) => {
     res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, `success to suggest vote`));
 });
 
-// 에피소드 수정
-router.put('/:episodeIdx', authUtil.isAdmin, upload.single('img'), (req, res) => {
-    const {episodeIdx} = req.params;
-    const {title} = req.body;
 
-    // webtoonIdx가 없거나 title, img 전부 없으면 에러 응답
-    if(!episodeIdx || (!title && !req.file)){
-        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
-    }
-    
-    let putEpisodeQuery = "UPDATE episode SET ";
+// 투표 하기
+router.post('/:voteIdx/take', authUtil.isLoggedin, async(req, res) => {
+    const userIdx = req.decoded.user_idx;
+    const {voteIdx} = req.params;
+    const {choiceIdx} = req.body;
 
-    if(title) putEpisodeQuery += ` title = '${title}',`;
-    if(req.file) putEpisodeQuery += ` img_url = '${req.file.location}',`;
-    putEpisodeQuery = putEpisodeQuery.slice(0, putEpisodeQuery.length-1);
+    console.log(userIdx);
+    console.log(voteIdx);
+    console.log(choiceIdx);
 
-    putEpisodeQuery += " WHERE episode_idx = ?";
-
-    db.queryParam_Parse(putEpisodeQuery, [episodeIdx], function(result){
-        if (!result) {
-            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_UPDATE_ERROR));
-        } else {
-            if(result.changedRows > 0){
-                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_UPDATE_SUCCESS));
-            }else{
-                res.status(200).send(defaultRes.successFalse(statusCode.OK, resMessage.EPISODE_UPDATE_NOTHING));
-            }
-        }
-    });
-});
-
-// 에피소드 삭제
-router.delete('/:episodeIdx', authUtil.isAdmin, async (req, res) => {
-    const { episodeIdx } = req.params;
-
-    const deleteEpisodeQuery = "DELETE FROM episode WHERE episode_idx = ?";
-    const deleteEpisodeResult = await db.queryParam_Parse(deleteEpisodeQuery, [episodeIdx]);
-
-    if (!deleteEpisodeResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_DELETE_ERROR));
-    } else {
-        if (deleteEpisodeResult.affectedRows > 0) { // 바뀐 row가 없다면
-            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_DELETE_SUCCESS));
-        } else { // 바뀐 row가 있다면
-            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_DELETE_NOTHING));
-        }
-    }
-});
-
-// 컷 생성
-router.post('/', authUtil.isAdmin, upload.single('img'), (req, res) => {
-    const {webtoonIdx, title} = req.body;
-
-    // webtoonIdx, title, comment, img 중 하나라도 없으면 에러 응답
-    if(!webtoonIdx || !title || !req.file){
-        console.log(`webtoonIdx : ${webtoonIdx}`);
-        console.log(`title : ${title}`);
-        console.log(`req.img : ${req.file}`);
+    if (!userIdx || !voteIdx || !choiceIdx) {
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
     }
 
-    const imgUrl = req.file.location;
-    const params = [webtoonIdx, title, imgUrl];
+    const insertUserVoteQuery = "INSERT INTO user_vote(vote_idx, user_idx, vote_choice_idx) VALUES(?, ?, ?)";
+    const insertUserVoteResult = await db.queryParam_Parse(insertUserVoteQuery, [voteIdx, userIdx, choiceIdx]);
+
+    console.log(insertUserVoteResult);
+    if(!insertUserVoteResult){
+        return res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, `fail insert vote`));
+    }
     
-    const postEpisodeQuery = "INSERT INTO episode(webtoon_idx, title, img_url, views, date) VALUES(?, ?, ?, 0, now())";
-    db.queryParam_Parse(postEpisodeQuery, params, function(result){
-        if (!result) {
-            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_INSERT_ERROR));
-        } else {
-            res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_INSERT_SUCCESS));
-        }
-    });
+    return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, `success to take vote`));
 });
 
 module.exports = router;
