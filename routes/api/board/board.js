@@ -257,7 +257,7 @@ router.delete('/:boardIdx/unlike', authUtil.isLoggedin,  async(req, res) => {
 router.get('/creator/:creatorIdx', async (req, res) => {
  const {creatorIdx} =req.params;
 //post글 board_idx  = board idx name -> 
-    let getCreatorBoardQuery = `SELECT b.*
+    let getCreatorBoardQuery = `SELECT b.idx AS 'board_idx',b.name ,b.type,b.creator_idx
 FROM board b 
 INNER JOIN creator c ON c.idx = b.creator_idx 
 WHERE b.type = 'creator' AND b.creator_idx = ?`;
@@ -298,6 +298,8 @@ if(!req.decoded){
     if(type) getBoardSearchQuery+= ` type LIKE '%${type}%',`;
     if(type) getBoardSearchQuery = getBoardSearchQuery.slice(0, getBoardSearchQuery.length-1);
    
+    console.log("aaaaaa");
+    console.log(getBoardSearchQuery);
     const getBoardSearchResult = await db.queryParam_None(getBoardSearchQuery);
     console.log("ass");
     console.log(getBoardSearchResult[0].length);
