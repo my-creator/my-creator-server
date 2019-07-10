@@ -18,7 +18,7 @@ var url = require('url');
 
 // 진행중인 투표 조회
 router.get('/ings/newest', async(req, res) => {
-    const getVoteQuery = "SELECT * FROM vote WHERE start_time<=now() AND end_time>now() ORDER BY idx DESC LIMIT 1";
+    const getVoteQuery = "SELECT * FROM vote WHERE start_time<=now() AND end_time>now() AND is_permitted = 1 ORDER BY idx DESC LIMIT 1";
     const getVoteResult = await db.queryParam_None(getVoteQuery);
     const result = getVoteResult[0];
 
@@ -54,7 +54,7 @@ router.get('/ings/newest', async(req, res) => {
 
 // 진행중인 투표 목록 조회
 router.get('/ings', async(req, res) => {
-    const getVoteQuery = "SELECT * FROM vote WHERE start_time<=now() AND end_time>now() ORDER BY idx DESC;";
+    const getVoteQuery = "SELECT * FROM vote WHERE start_time<=now() AND end_time>now() AND is_permitted = 1 ORDER BY idx DESC;";
     const getVoteResult = await db.queryParam_None(getVoteQuery);
     const result = getVoteResult[0];
 
@@ -102,7 +102,7 @@ router.get('/ings', async(req, res) => {
 
 // 지난 투표 조회
 router.get('/lasts', async(req, res) => {
-    const getVoteQuery = "SELECT * FROM vote WHERE end_time <= now() ORDER BY idx DESC;";
+    const getVoteQuery = "SELECT * FROM vote WHERE end_time <= now() AND is_permitted = 1 ORDER BY idx DESC;";
     const getVoteResult = await db.queryParam_None(getVoteQuery);
     const result = getVoteResult[0];
 
@@ -195,6 +195,45 @@ router.post('/:voteIdx/take', authUtil.isLoggedin, async(req, res) => {
     }
     
     return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, `success to take vote`));
+});
+
+// 투표 허가
+router.put('/:voteIdx/permit', authUtil.isAdmin, async(req, res) => {
+    const {voteIdx} = req.params;
+    const {startTime, endTime} = req.body;
+
+    if (!voteIdx || !startTime || !endTime) {
+        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
+    }
+
+    const permitVoteQuery = "UPDATE vote SET start_time = ?, end_time = ?, is_permitted = 1 WHERE idx = ?";
+    const permitVoteResult = await db.queryParam_Parse(permitVoteQuery, [startTime, endTime, voteIdx]);
+
+    console.log(permitVoteResult);
+    if(!permitVoteResult){
+        return res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, `fail insert vote`));
+    }
+    
+    return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, `success to permit vote`));
+});
+
+// 투표 거부
+router.put('/:voteIdx/refuse', authUtil.isAdmin, async(req, res) => {
+    const {voteIdx} = req.params;
+
+    if (!voteIdx) {
+        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
+    }
+
+    const permitVoteQuery = "UPDATE vote SET is_permitted = 2 WHERE idx = ?";
+    const permitVoteResult = await db.queryParam_Parse(permitVoteQuery, [voteIdx]);
+
+    console.log(permitVoteResult);
+    if(!permitVoteResult){
+        return res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, `fail insert vote`));
+    }
+    
+    return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, `success to refuse vote`));
 });
 
 module.exports = router;
