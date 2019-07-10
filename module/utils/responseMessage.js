@@ -146,5 +146,17 @@ module.exports = {
     STAT_HASHTAG_INSERT_SUCCESS:"해쉬태그 등록 성공",
     BOARD_UNLIKE_SELECT_ERROR:"즐겨찾기 하지 않은 게시판 리스트 조회 에러",
     BOARD_UNLIKE_SELECT_SUCCESS:"즐겨찾기 하지 않은 게시판 리스트 조회 성공",
-    GET_BOARD_SEARCH_NOTHING:"게시판 검색 결과가 없습니다."
+    GET_BOARD_SEARCH_NOTHING:"게시판 검색 결과가 없습니다.",
+
+    VOTE_PROGRESSING_SELECT_ERROR: "진행중인 투표 조회 에러",
+    VOTE_PROGRESSING_CHOICE_SELECT_ERROR: "진행중인 투표 선택 에러",
+    VOTE_PROGRESSING_SELECT_SUCCESS: "진행중인 투표 조회 성공",
+    VOTE_PROGRESSING_LIST_SELECT_ERROR: "진행중인 투표 목록 조회 에러",
+    VOTE_PROGRESSING_CHOICE_LIST_SELECT_ERROR: "진행중인 투표 목록 선택 에러",
+    VOTE_PROGRESSING_LIST_SELECT_SUCCESS: "진행중인 투표 목록 조회 성공",
+    VOTE_LAST_SELECT_ERROR: "지난 투표 조회 에러",
+    VOTE_LAST_CHOICE_SELECT_ERROR: "지난 투표 선택 에러",
+    VOTE_LAST_SELECT_SUCCESS: "지난 투표 조회 성공",
+    VOTE_INSERT_ERROR: "투표 제안 에러",
+    VOTE_SUGGEST_SUCCESS: "투표 제안 성공",
 };

@@ -23,7 +23,7 @@ router.get('/ings/newest', async(req, res) => {
     const result = getVoteResult[0];
 
     if (!result) {
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.VOTE_PROGRESSING_SELECT_ERROR));
     } else {
         const getVoteChoiceQuery = 
         `SELECT vc.idx, vc.vote_idx, vc.name, c.profile_url AS creator_profile_url, c.follower_grade_idx, 
@@ -36,7 +36,7 @@ router.get('/ings/newest', async(req, res) => {
             WHERE vc.vote_idx = ?;`;
         const getVoteChoiceResult = await db.queryParam_Parse(getVoteChoiceQuery, [result[0].idx]);
         if(!getVoteChoiceResult){
-            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
+            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.VOTE_PROGRESSING_CHOICE_SELECT_ERROR));
         }else{
             result.forEach((vote, index, votes)=>{
                 result[index]["choices"] = [];
@@ -48,7 +48,7 @@ router.get('/ings/newest', async(req, res) => {
                 });
             });
         }
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, result));
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.VOTE_PROGRESSING_SELECT_SUCCESS, result));
     }
 });
 
@@ -59,7 +59,7 @@ router.get('/ings', async(req, res) => {
     const result = getVoteResult[0];
 
     if (!result) {
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.VOTE_PROGRESSING_LIST_SELECT_ERROR));
     } else {
         let idxList = "";
         if(result.length==0){
@@ -83,7 +83,7 @@ router.get('/ings', async(req, res) => {
             WHERE vc.vote_idx IN (${idxList});`;
         const getVoteChoiceResult = await db.queryParam_None(getVoteChoiceQuery);
         if(!getVoteChoiceResult){
-            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
+            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.VOTE_PROGRESSING_CHOICE_LIST_SELECT_ERROR));
         }else{
             choiceResult = getVoteChoiceResult[0];
             result.forEach((vote, index, votes)=>{
@@ -96,7 +96,7 @@ router.get('/ings', async(req, res) => {
                 });
             });
         }
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, result));
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.VOTE_PROGRESSING_LIST_SELECT_SUCCESS, result));
     }
 });
 
@@ -107,7 +107,7 @@ router.get('/lasts', async(req, res) => {
     const result = getVoteResult[0];
 
     if (!result) {
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.VOTE_LAST_SELECT_ERROR));
     } else {
         let idxList;
         if(result.length==0){
@@ -133,7 +133,7 @@ router.get('/lasts', async(req, res) => {
         const getVoteChoiceResult = await db.queryParam_None(getVoteChoiceQuery);
         choiceResult = getVoteChoiceResult[0];
         if(!choiceResult){
-            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
+            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.VOTE_LAST_CHOICE_SELECT_ERROR));
         }else{
             result.forEach((vote, index, votes)=>{
                 result[index]["choices"] = [];
@@ -144,7 +144,7 @@ router.get('/lasts', async(req, res) => {
                 });
             });
         }
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, result));
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.VOTE_LAST_SELECT_SUCCESS, result));
     }
 });
 
@@ -160,7 +160,7 @@ router.post('/suggestion', /*authUtil.isLoggedin,*/ async(req, res) => {
     const insertVoteResult = await db.queryParam_Parse(insertVoteQuery, [title]);
 
     if(!insertVoteResult){
-        return res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, `fail insert vote`));
+        return res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.VOTE_INSERT_ERROR ));  //`fail insert vote`
     }
     
     choices.forEach(async (choice, index, array)=>{
@@ -168,7 +168,7 @@ router.post('/suggestion', /*authUtil.isLoggedin,*/ async(req, res) => {
         const insertVoteChoiceResult = await db.queryParam_Parse(insertVoteChoiceQuery, [insertVoteResult[0].insertId,choice.name]);
         console.log(insertVoteChoiceResult);
     })
-    res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, `success to suggest vote`));
+    res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.VOTE_SUGGEST_SUCCESS));  //`success to suggest vote`
 });
 
 // 에피소드 수정
