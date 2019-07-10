@@ -1,7 +1,6 @@
 var express = require('express');
 var router = express.Router();
 
-router.use('/', require('./creator'));
-router.use('/profiles', require('./profile/index'));
+router.use('/', require('./profile'));
 
 module.exports = router;

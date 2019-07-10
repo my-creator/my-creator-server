@@ -10,7 +10,7 @@ const authUtil = require('../../../module/utils/authUtils');
 const moment = require('moment');
 const jwtUtil = require('../../../module/utils/jwt');
 
-// 1. 크리에이터 생성   ok
+// 크리에이터 생성   ok
 router.post('/', authUtil.isAdmin, upload.single('img'), (req, res) => {
     const { name, youtube_subscriber_cnt, youtube_view_cnt, contents, channel_id } = req.body;
     const profileUrl = req.file.location;
@@ -31,7 +31,7 @@ router.post('/', authUtil.isAdmin, upload.single('img'), (req, res) => {
 });
 
 
-//2. 크리에이터 수정  ok
+// 크리에이터 수정  ok
 router.put('/:creatorIdx', authUtil.isAdmin, upload.single('img'), (req, res) => {
     const { creatorIdx } = req.params;
 
@@ -64,7 +64,7 @@ router.put('/:creatorIdx', authUtil.isAdmin, upload.single('img'), (req, res) =>
 
 
 
-// 3. 크리에이터 삭제  ok
+// 크리에이터 삭제  ok
 router.delete('/:creatorIdx', authUtil.isAdmin, async (req, res) => {
     const { creatorIdx } = req.params;
 
@@ -80,7 +80,7 @@ router.delete('/:creatorIdx', authUtil.isAdmin, async (req, res) => {
 
 
 
-//6. 크리에이터 대표영상 3개 조회 ok
+// 크리에이터 대표영상 3개 조회 ok
 //view_cnt 기준으로 정렬 DESC
 //video테이블 모든 정보 && creator테이블의 channel_id필요
 router.get('/:creatorIdx/popularvideo/three', async (req, res) => {
@@ -99,7 +99,7 @@ router.get('/:creatorIdx/popularvideo/three', async (req, res) => {
     }
 });
 
-//7. 크리에이터 최신영상 3개 조회  ok
+// 크리에이터 최신영상 3개 조회  ok
 //create_time기준으로 정렬 DESC
 //video테이블 모든 정보 && creator테이블의 channel_id필요
 router.get('/:creatorIdx/newvideo/three', async (req, res) => {
@@ -119,13 +119,29 @@ router.get('/:creatorIdx/newvideo/three', async (req, res) => {
     }
 });
 
-//!!!랭킹!!!!!!!!!!
-//스케줄링 빼고 작성했음!
 
+//!!!랭킹!!!!!!!!!! 
 
 //WHERE NOW() >= date_add(now(), interval -1 day) 
 //1. 전체 크리에이터 중 전체 구독자수 랭킹
 router.get('/all/subscribe/allrank', async (req, res) => {
+    const getCratorAllRankQuery = `SELECT c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
+                                FROM creator c
+                                INNER JOIN creator_category cc ON cc.creator_idx = c.idx
+                                INNER JOIN category ccc ON ccc.idx = cc.category_idx
+                                INNER JOIN follower_grade fg ON fg.idx = c.follower_grade_idx
+                                ORDER BY c.youtube_subscriber_cnt DESC LIMIT 100`;
+    const getCratorAllRankResult = await db.queryParam_None(getCratorAllRankQuery);
+
+    if (!getCratorAllRankResult) {
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_PROFILE_ERROR));
+    } else {
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_LIST_BY_CATEGORY_SELECT_SUCCESS, getCratorAllRankResult[0]));
+    }
+});
+
+//2. 전체 크리에이터 중 일간핫 구독자수 랭킹
+router.get('/all/subscribe/hotrank', async (req, res) => {
     const getCategoryIdxQuery = `SELECT c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
                                 FROM creator c
                                 INNER JOIN creator_category cc ON cc.creator_idx = c.idx
@@ -140,6 +156,7 @@ router.get('/all/subscribe/allrank', async (req, res) => {
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_LIST_BY_CATEGORY_SELECT_SUCCESS, getCreatorCategoryResult[0]));
     }
 });
+
 
 //2. 전체 크리에이터 중 일간핫 구독자수 랭킹
 router.get('/all/subscribe/hotrank', async (req, res) => {
@@ -224,6 +241,18 @@ router.get('/:categoryIdx/subscribe/hotrank', async (req, res) => {
                                 ORDER BY c.youtube_subscriber_cnt DESC`;
     const getCreatorCategoryResult = await db.queryParam_None(getCategoryIdxQuery);
 
+
+//6. 카테고리별 크리에이터 중 일간핫 구독자수 랭킹 
+router.get('/:categoryIdx/subscribe/hotrank', async (req, res) => {
+    const { categoryIdx } = req.params;
+    const getCategoryIdxQuery = `SELECT c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
+                                FROM creator c
+                                INNER JOIN creator_category cc ON cc.creator_idx = c.idx
+                                INNER JOIN category ccc ON ccc.idx = cc.category_idx
+                                INNER JOIN follower_grade fg ON fg.idx = c.follower_grade_idx
+                                WHERE ccc.idx = '${categoryIdx}'
+                                ORDER BY c.youtube_subscriber_cnt DESC`;
+    const getCreatorCategoryResult = await db.queryParam_None(getCategoryIdxQuery);
     if (!getCreatorCategoryResult) {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_LIST_BY_CATEGORY_SELECT_ERROR));
     } else {
@@ -269,8 +298,19 @@ router.get('/:categoryIdx/view/hotrank', async (req, res) => {
     }
 });
 
+// 크리에이터 검색 - 크리크리에 있는 크리에이터 전체인원 ok 
+router.get('/allCreatorCnt', async (req, res) => {
+    const getCreatorSearchQuery = "SELECT count(idx) AS creatorAllCnt FROM creator";
+    const getCreatorSearchResult = await db.queryParam_None(getCreatorSearchQuery);
 
-// 크리에이터 검색 => ok
+    if (!getCreatorSearchResult) {
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_LIST_BY_NAME_SELECT_ERROR));
+    } else {
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_LIST_BY_NAME_SELECT_SUCCESS, getCreatorSearchResult[0]));
+    }
+});
+
+// 크리에이터 검색 - 크리에이터 정보 ok
 router.get('/creatorSearch', async (req, res) => {
     const { name } = req.query;
     const getCreatorSearchQuery = `SELECT c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
@@ -348,7 +388,7 @@ router.delete('/:creatorIdx/category/:categoryIdx', authUtil.isAdmin, async (req
 router.get('/chart/hot', async (req, res) => {
     const getHotCreatorsQuery = `SELECT c.*, cs.cnt FROM creator c 
         INNER JOIN (SELECT creator_idx, 
-        COUNT(*) AS cnt FROM creator_search WHERE NOW() >= date_add(now(), interval -1 day) 
+        COUNT(*) AS cnt FROM creator_search WHERE search_time >= date_add(now(), interval -1 day) 
         GROUP BY creator_idx) cs ON c.idx = cs.creator_idx ORDER BY cs.cnt DESC LIMIT 0, 10`;
     const getHotCreatorsResult = await db.queryParam_None(getHotCreatorsQuery);
 
