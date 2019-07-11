@@ -55,7 +55,7 @@ router.get('/:postIdx', async(req, res) => {
     
     const getCommentsQuery = `SELECT r.idx,r.post_idx,r.user_idx,r.content,date_format(r.create_time,'%Y-%m-%d %h:%i') AS reply_create_time,r.is_anonymous, u.name,u.profile_url
     FROM ( reply r INNER JOIN user u ON u.idx = r.user_idx) 
-    WHERE r.post_idx = ? GROUP BY r.idx ORDER BY r.create_time DESC`;
+    WHERE r.post_idx = ? GROUP BY r.idx ORDER BY r.create_time ASC`;
     const getCommentsResult = await db.queryParam_Parse(getCommentsQuery, [postIdx]);
 
     if (!getCommentsResult) {

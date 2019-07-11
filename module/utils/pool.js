@@ -14,6 +14,7 @@ module.exports = { // 두 개의 메소드 module화
             result = await connection.query(query); // query문의 결과 || null 값이 result에 들어간다.
 
         } catch (err) {
+            console.log(err);
             connection.rollback(() => {});
             next(err);
         } finally {
@@ -32,6 +33,7 @@ module.exports = { // 두 개의 메소드 module화
             var connection = await pool.getConnection(); // connection을 pool에서 하나 가져온다.
             result = await connection.query(query, value); // 두 번째 parameter에 배열 => query문에 들어갈 runtime 시 결정될 value
         } catch (err) {
+            console.log(err);
             connection.rollback(() => {});
             next(err);
         } finally {

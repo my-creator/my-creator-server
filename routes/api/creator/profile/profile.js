@@ -21,8 +21,11 @@ const jwtUtil = require('../../../../module/utils/jwt');
 //랭킹 이미지,업적 이미지! 등급 이미지!!
 //순위
 //카테고리 먹방 2위!!
+
+//search_time
 router.get('/:creatorIdx', async (req, res) => {
     const { creatorIdx } = req.params;
+
 
     const getCreatorProfileQuery = `SELECT c.idx AS 'creator_idx',c.view_grade_idx,c.follower_grade_idx,c.profile_url,c.name AS'creator_name',c.youtube_subscriber_cnt,
 c.youtube_view_cnt,c.follower_cnt,c.contents,c.channel_id,date_format(c.create_time,'%Y-%m-%d %h:%i') AS 'creator_create_time',
@@ -170,8 +173,14 @@ SELECT cc.creator_idx ,c.*
             }
         });
 
-         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_SELECT_PROFILE_SUCCESS, result));
+    const insertCreatorTimeQuery = `INSERT INTO creator_search(creator_idx,search_time ) VALUES(?,?)`; 
+    const insertCreatorTimeResult = await db.queryParam_Parse(insertCreatorTimeQuery,[creatorIdx,moment().format("YYYY-MM-DD HH:mm")]);
 
+    if(!insertCreatorTimeResult){
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_PROFILE_ERROR));
+    }else{
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_SELECT_PROFILE_SUCCESS, result));
+    }
 
     }
     }

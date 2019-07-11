@@ -163,5 +163,10 @@ module.exports = {
     BOARD_UNLIKE_SELECT_ERROR: "즐겨찾기 하지 않은 게시판 리스트 조회 에러",
     BOARD_UNLIKE_SELECT_SUCCESS: "즐겨찾기 하지 않은 게시판 리스트 조회 성공",
     GET_BOARD_SEARCH_NOTHING: "게시판 검색 결과가 없습니다.",
-    POST_SELECT_NOTHING:"게시글 상세 조회 결과가 없습니다."
+    POST_SELECT_NOTHING:"게시글 상세 조회 결과가 없습니다.",
+    MEMBERSHIP_INSERT_DUPLICATE:"이미 존재하는 Id입니다.",
+    MEMBERSHIP_INSERT_FAIL:"회원가입에 실패했습니다.",
+    MEMBERSHIP_INSERT_SUCCESS:"회원가입에 성공했습니다.",
+    MEMBERSHIP_ID_NOTHING:"등록 가능한 ID입니다.",
+    MEMBERSHIP_ID_EXIST:"이미 존재하는 ID입니다."
 };
