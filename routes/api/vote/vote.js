@@ -266,10 +266,6 @@ router.post('/:voteIdx/take', authUtil.isLoggedin, async(req, res) => {
     const {voteIdx} = req.params;
     const {choiceIdx} = req.body;
 
-    console.log(userIdx);
-    console.log(voteIdx);
-    console.log(choiceIdx);
-
     if (!userIdx || !voteIdx || !choiceIdx) {
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
     }
@@ -277,10 +273,11 @@ router.post('/:voteIdx/take', authUtil.isLoggedin, async(req, res) => {
     const insertUserVoteQuery = "INSERT INTO user_vote(vote_idx, user_idx, vote_choice_idx) VALUES(?, ?, ?)";
     const insertUserVoteResult = await db.queryParam_Parse(insertUserVoteQuery, [voteIdx, userIdx, choiceIdx]);
 
-    console.log(insertUserVoteResult);
     if(!insertUserVoteResult){
         return res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, `fail insert vote`));
     }
+    const increaseVoteChoiceCountQuery = "UPDATE vote_choice SET count = count + 1 WHERE idx = ?;";
+    const increaseVoteChoiceCountResult = await db.queryParam_Parse(increaseVoteChoiceCountQuery, [choiceIdx]);
     
     return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, `success to take vote`));
 });
