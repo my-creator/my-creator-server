@@ -14,6 +14,8 @@ const jwtUtil = require('../../../module/utils/jwt');
 const cron = require('node-cron');
 const fileSys = require('fs');
 
+const jwt = require('../../../module/utils/jwt');
+
 //게시판별 게시글 리스트 조회 okdk
 //인기글은 HOT배너//좋아요수 기준
 //썸네일(기본/게시글 속 사진), 제목, 등록유저,게시판이름,게시글 등록 시간    
@@ -67,9 +69,7 @@ ORDER BY like_cnt DESC LIMIT 3`;
 
 
     const ans = JSON.parse(JSON.stringify(getResult[0]));
-        console.log("getResult");
-        console.log(ans.length);//3
-    console.log(ans[0].idx); //45
+       
     let answer = [];   
     for(var i = 0;i<ans.length;i++){
         answer[i] = ans[i].idx;
@@ -113,9 +113,11 @@ ORDER BY p.create_time DESC`;//인기글 1로 나머지 다 0으로 / 시간 순
 
 //게시글 상세 조회 다~ okdk
 //게시글 미디오 한장만일때임
+//
 router.get('/detail/:postIdx', async (req, res) => {
+
  const {postIdx} = req.params;
-    let getPostQuery  = `SELECT p.idx AS 'post_idx',p.board_idx,b.name AS 'board_name',p.user_idx,p.title,p.contents,p.view_cnt,date_format(p.create_time,'%Y-%m-%d %h:%i') 
+    let getPostQuery  = `SELECT p.idx AS 'post_idx',p.board_idx,b.name AS 'board_name',p.user_idx AS 'write_user_idx',p.title,p.contents,p.view_cnt,date_format(p.create_time,'%Y-%m-%d %h:%i') 
 AS 'create_time',p.is_anonymous, u.id, u.nickname, u.profile_url , COUNT(r.idx) AS 'reply_cnt' ,pm.type AS 'media_type',pm.media_url AS 'media_url'
     FROM post p 
     INNER JOIN post_media pm ON pm.post_idx = p.idx
@@ -125,12 +127,25 @@ AS 'create_time',p.is_anonymous, u.id, u.nickname, u.profile_url , COUNT(r.idx) 
     WHERE p.idx = ?`;
 
     const getPostResult = await db.queryParam_Parse(getPostQuery,[postIdx]);
-    console.log(getPostResult);
-
 
     const ans = JSON.parse(JSON.stringify(getPostResult));
-    console.log("aaaa");
-    console.log(ans[0][0].post_idx);
+
+    const {token} = req.headers;
+    let userIdx;
+    if(token){
+        const user = jwt.verify(token);
+        userIdx = user.user_idx;
+        console.log("userIdx1");
+        console.log(userIdx);
+
+
+    }else{
+        userIdx = -1;
+
+    }
+
+            ans[0][0]["login_userIdx"] = userIdx;//id가     
+
     //쿼리문의 결과가 실패이면 null을 반환한다
     if (!getPostResult) { //쿼리문이 실패했을 때
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_SELECT_ERROR));
@@ -138,7 +153,64 @@ AS 'create_time',p.is_anonymous, u.id, u.nickname, u.profile_url , COUNT(r.idx) 
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_SELECT_NOTHING));
     }
     else{ //쿼리문이 성공했을 때
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_SELECT_SUCCESS, getPostResult[0]));
+        
+    const getLikeCntQuery = "SELECT COUNT(*) AS 'like_cnt' FROM post p INNER JOIN `like` l ON l.post_idx = p.idx WHERE p.idx = ?";
+    const getLikeCntResult = await db.queryParam_Parse(getLikeCntQuery,[postIdx]);
+
+    if(!getLikeCntResult){
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_SELECT_ERROR));
+    }else{
+        const getHateCntQuery = "SELECT COUNT(*) AS 'hate_cnt' FROM post p INNER JOIN hate h ON h.post_idx = p.idx WHERE p.idx = ?";
+        const getHateCntResult = await db.queryParam_Parse(getHateCntQuery,[postIdx]);
+
+        if(!getHateCntResult){
+            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_SELECT_ERROR));
+        }else{
+
+            ans[0][0]["like_cnt"] = getLikeCntResult[0][0].like_cnt;
+                ans[0][0]["hate_cnt"] = getHateCntResult[0][0].hate_cnt;
+
+            if(userIdx === -1){//토큰 없으면/is_liked = false 헤더가 없으면, 헤더가 잇으면 검사해서 true
+                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_SELECT_SUCCESS, ans[0]));
+
+            }else{//userIdx검사
+
+                /*SELECT *
+FROM `like` l
+WHERE l.user_idx = 12 AND post_idx = 43;
+
+SELECT *
+FROM `hate` h
+WHERE h.user_idx = 12 AND post_idx = 43;*/
+
+                const getUserLikeQuery = "SELECT * FROM `like` l WHERE l.user_idx = ? AND l.post_idx = ?";
+                const getUserLikeResult = await db.queryParam_Parse(getUserLikeQuery,[userIdx,postIdx]);
+                    
+                    if(!getUserLikeResult){
+                        ans[0][0]["is_like"] = 0;
+                    }else{
+                        ans[0][0]["is_like"] = 1;
+                    }
+
+                const getUserHateQuery = "SELECT * FROM `hate` h WHERE h.user_idx = ? AND h.post_idx = ?";
+                const getUserHateResult = await db.queryParam_Parse(getUserHateQuery,[userIdx,postIdx]);
+
+
+                    if(!getUserHateResult){
+                        ans[0][0]["is_hate"] = 0;
+                    }else{
+                        ans[0][0]["is_hate"] = 1;
+                    }
+
+
+                    res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_SELECT_SUCCESS, ans[0]));
+                            
+            }
+            
+        }
+
+    }
+        
     }
 });
 
@@ -473,8 +545,9 @@ router.post('/:postIdx/like', authUtil.isLoggedin,  async(req, res) => {
 
 
 //게시글 좋아요 취소
+
 //okdk
-router.post('/:postIdx/unlike', authUtil.isLoggedin,  async(req, res) => {
+router.delete('/:postIdx/unlike', authUtil.isLoggedin,  async(req, res) => {
     let postIdx = req.params.postIdx;
     
     
@@ -582,7 +655,7 @@ router.post('/:postIdx/hate', authUtil.isLoggedin,  async(req, res) => {
 
 //게시글 싫어요  취소
 //okdk
-router.post('/:postIdx/unhate', authUtil.isLoggedin,  async(req, res) => {
+router.delete('/:postIdx/unhate', authUtil.isLoggedin,  async(req, res) => {
     let postIdx = req.params.postIdx;
     
     
@@ -778,9 +851,9 @@ router.put('/:postIdx', authUtil.isLoggedin, upload.array('imgs'),async(req, res
     let media_url = "";
     if(req.body.title) title+= req.body.title;
     if(req.body.contents) contents+= req.body.contents;
-    if(req.body.media_url) media_url+= req.body.media_url;
+    if(req.file.location) media_url+= req.body.media_url;
 
-    if(!title && !contents && !media_url){
+    if(!title || !contents || !media_url){
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
     }
     //const imgUrl = req.files;
@@ -802,6 +875,36 @@ router.put('/:postIdx', authUtil.isLoggedin, upload.array('imgs'),async(req, res
 
     //이미지 수정기능 추가해야함!
 });
+
+//게시글 이미지 
+router.put('/image/:postIdx',upload.single('imgs'),async(req, res) => {
+    const postIdx = req.params.postIdx;
+    const imgUrl = req.file.location;
+    console.log(imgUrl);
+//UPDATE `crecre`.`post` SET `thumbnail_url` = 'https://crecre.s3.ap-northeast-2.amazonaws.com/cls6.png' WHERE (`idx` = '43');
+
+    
+    if(!imgUrl){
+        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
+    }
+    //const imgUrl = req.files;
+//imgUrl[i].location
+
+    //본인이 올린 
+    let putPostimgQuery =  `UPDATE post SET thumbnail_url = ? WHERE idx = ?`;    
+    let putPostimgResult = await db.queryParam_Parse(putPostimgQuery,[imgUrl,postIdx]);
+
+    console.log("put");
+    console.log(putPostimgResult);
+    if (!putPostimgResult) {
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_UPDATE_ERROR));
+    }else{
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_UPDATE_SUCCESS));
+    }
+
+    //이미지 수정기능 추가해야함!
+});
+
 
 
 

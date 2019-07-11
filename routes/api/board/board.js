@@ -45,14 +45,23 @@ router.get('/like', authUtil.isLoggedin, async (req, res) => {
     WHERE user_idx = ?`;
     
     const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery,[userIdx]);
+    console.log("sss");
+    console.log(getLikeBoardResult[0]);
 
+    let ans = getLikeBoardResult[0];
+    for(var i = 0;i<getLikeBoardResult[0].length;i++){
+        ans[i]["is_love"]=1;
+    }
+
+    console.log("ans");
+    console.log(ans);
     //쿼리문의 결과가 실패이면 null을 반환한다
     if (!getLikeBoardResult) { //쿼리문이 실패했을 때
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_SELECT_ERROR));
     } else if(getLikeBoardResult.length === 0){
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_SELECT_ERROR));
     }else{ //쿼리문이 성공했을 때
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_LIKE_SELECT_SUCCESS,getLikeBoardResult[0]));
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_LIKE_SELECT_SUCCESS,ans));
     }
 });
 
@@ -88,7 +97,18 @@ router.get('/unlike', authUtil.isLoggedin,async (req, res) => {
         } else if(getLikeBoardResult.length === 0){
             res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_UNLIKE_SELECT_ERROR));
         }else{ //쿼리문이 성공했을 때
-            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_UNLIKE_SELECT_SUCCESS,getLikeBoardResult[0]));
+
+
+            let anss = getLikeBoardResult[0];
+            for(var i = 0;i<getLikeBoardResult[0].length;i++){
+                anss[i]["is_love"]=0;
+            }
+
+            console.log("ans");
+            console.log(anss);
+
+
+            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_UNLIKE_SELECT_SUCCESS,anss));
         }
     }
 
