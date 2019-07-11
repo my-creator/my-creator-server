@@ -67,9 +67,7 @@ ORDER BY like_cnt DESC LIMIT 3`;
 
 
     const ans = JSON.parse(JSON.stringify(getResult[0]));
-        console.log("getResult");
-        console.log(ans.length);//3
-    console.log(ans[0].idx); //45
+       
     let answer = [];   
     for(var i = 0;i<ans.length;i++){
         answer[i] = ans[i].idx;
@@ -128,9 +126,12 @@ AS 'create_time',p.is_anonymous, u.id, u.nickname, u.profile_url , COUNT(r.idx) 
     console.log(getPostResult);
 
 
+
+
     const ans = JSON.parse(JSON.stringify(getPostResult));
     console.log("aaaa");
     console.log(ans[0][0].post_idx);
+
     //쿼리문의 결과가 실패이면 null을 반환한다
     if (!getPostResult) { //쿼리문이 실패했을 때
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_SELECT_ERROR));
@@ -138,7 +139,39 @@ AS 'create_time',p.is_anonymous, u.id, u.nickname, u.profile_url , COUNT(r.idx) 
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_SELECT_NOTHING));
     }
     else{ //쿼리문이 성공했을 때
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_SELECT_SUCCESS, getPostResult[0]));
+        
+    const getLikeCntQuery = "SELECT COUNT(*) AS 'like_cnt' FROM post p INNER JOIN `like` l ON l.post_idx = p.idx WHERE p.idx = ?";
+    const getLikeCntResult = await db.queryParam_Parse(getLikeCntQuery,[postIdx]);
+
+    console.log("getlike");
+    console.log(getLikeCntResult[0][0].like_cnt);
+
+    if(!getLikeCntResult){
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_SELECT_ERROR));
+    }else{
+        const getHateCntQuery = "SELECT COUNT(*) AS 'hate_cnt' FROM post p INNER JOIN hate h ON h.post_idx = p.idx WHERE p.idx = ?";
+        const getHateCntResult = await db.queryParam_Parse(getHateCntQuery,[postIdx]);
+
+        console.log("gethate");
+        console.log(getHateCntResult[0][0].hate_cnt);
+
+        if(!getHateCntResult){
+            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_SELECT_ERROR));
+        }else{
+
+
+                ans[0][0]["like_cnt"] = getLikeCntResult[0][0].like_cnt;
+                ans[0][0]["hate_cnt"] = getHateCntResult[0][0].hate_cnt;
+                console.log("answer");
+                console.log(ans[0]);
+
+            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_SELECT_SUCCESS, ans[0]));
+        }
+
+
+    }
+
+        
     }
 });
 
@@ -473,8 +506,9 @@ router.post('/:postIdx/like', authUtil.isLoggedin,  async(req, res) => {
 
 
 //게시글 좋아요 취소
+
 //okdk
-router.post('/:postIdx/unlike', authUtil.isLoggedin,  async(req, res) => {
+router.delete('/:postIdx/unlike', authUtil.isLoggedin,  async(req, res) => {
     let postIdx = req.params.postIdx;
     
     
@@ -582,7 +616,7 @@ router.post('/:postIdx/hate', authUtil.isLoggedin,  async(req, res) => {
 
 //게시글 싫어요  취소
 //okdk
-router.post('/:postIdx/unhate', authUtil.isLoggedin,  async(req, res) => {
+router.delete('/:postIdx/unhate', authUtil.isLoggedin,  async(req, res) => {
     let postIdx = req.params.postIdx;
     
     
