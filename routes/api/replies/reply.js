@@ -21,26 +21,30 @@ router.post('/', authUtil.isLoggedin, async(req, res) => {
     const userIdx = req.decoded.user_idx;
     const createTime = moment().format("YYYY-MM-DD HH:mm");
 
+
     //게시글 있는지
     const getPostQuery = "SELECT * FROM post WHERE idx = ?";
     const getPostResult = await db.queryParam_Parse(getPostQuery, [postIdx]);
 
-    console.log(getPostResult[0]);
+    //console.log(getPostResult[0]);
+    console.log(req.decoded.user_idx);
 
-
-     if(!getPostResult || getPostResult.length < 1){
+     if(!getPostResult){
             res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.POSTS_SELECT_NOTHING + `: ${postIdx}`));
+    }else if(getPostResult.length === 0){
+         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.COMMENT_INSERT_ERROR));
     }
-    
-        const postCommentsQuery = "INSERT INTO reply(post_idx, user_idx, content,create_time,is_anonymous) VALUES(?, ?, ?,?,?)";
-        const postCommentsResult = db.queryParam_Parse(postCommentsQuery, [postIdx,userIdx,comments,createTime,is_anonymous], function(result){
-            if (!result) {
+    else{
+        const postCommentsQuery = "INSERT INTO reply(post_idx,user_idx,  content,create_time,is_anonymous) VALUES(?, ?, ?,?,?)";
+        const postCommentsResult =await  db.queryParam_Parse(postCommentsQuery, [postIdx,req.decoded.user_idx,comments,createTime,is_anonymous]);
+            if (!postCommentsResult) {
                 res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.COMMENT_INSERT_ERROR));
             } else {
                 res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.COMMENT_INSERT_SUCCESS));
             }
-
-    });
+    }
+    
+        
 });
 
 
@@ -51,7 +55,7 @@ router.get('/:postIdx', async(req, res) => {
     
     const getCommentsQuery = `SELECT r.idx,r.post_idx,r.user_idx,r.content,date_format(r.create_time,'%Y-%m-%d %h:%i') AS reply_create_time,r.is_anonymous, u.name,u.profile_url
     FROM ( reply r INNER JOIN user u ON u.idx = r.user_idx) 
-    WHERE r.post_idx = ? GROUP BY r.idx ORDER BY r.create_time DESC`;
+    WHERE r.post_idx = ? GROUP BY r.idx ORDER BY r.create_time ASC`;
     const getCommentsResult = await db.queryParam_Parse(getCommentsQuery, [postIdx]);
 
     if (!getCommentsResult) {

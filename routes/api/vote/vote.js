@@ -10,119 +10,196 @@ const encrypt = require('../../../module/utils/encrypt');
 const db = require('../../../module/utils/pool');
 const moment = require('moment');
 const authUtil = require('../../../module/utils/authUtils');
-const jwtUtil = require('../../../module/utils/jwt');
+const jwt = require('../../../module/utils/jwt');
 
 var urlencode = require('urlencode');
 var querystring = require('querystring');
 var url = require('url');
 
-// 진행중인 투표 조회
+// 진행중인 최근 한 투표 조회
 router.get('/ings/newest', async(req, res) => {
-    const getVoteQuery = "SELECT * FROM vote WHERE start_time<=now() AND end_time>now() ORDER BY idx DESC LIMIT 1";
-    const getVoteResult = await db.queryParam_None(getVoteQuery);
-    const result = getVoteResult[0];
+    const {token} = req.headers;
+    let userIdx;
+    if(token){
+        const user = jwt.verify(token);
+        userIdx = user.user_idx;
+    }else{
+        userIdx = -1;
+    }
 
-    if (!result) {
+    const getVoteQuery = 
+    `SELECT v.idx AS 'vote_idx', v.thumbnail_url, v.create_time, v.start_time, v.end_time, v.title, v.contents, v.type,
+	(SELECT vote_choice_idx FROM user_vote uv WHERE uv.vote_idx = v.idx AND uv.user_idx=${userIdx}) AS my_choice
+    FROM vote v LEFT JOIN user_vote uv ON v.idx = uv.vote_idx
+    WHERE v.start_time <= now() AND v.end_time > now() AND v.is_permitted = 1 ORDER BY v.idx DESC LIMIT 1`;
+    const getVoteResult = await db.queryParam_None(getVoteQuery);
+
+    if (!getVoteResult) {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
     } else {
+        // 진행중인 투표가 없을 때 빈 배열 반환
+        if(getVoteResult.length === 0){
+            return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, []));
+        }
+        const result = getVoteResult[0];
+        
         const getVoteChoiceQuery = 
-        `SELECT vc.idx, vc.vote_idx, vc.name, c.profile_url AS creator_profile_url, c.follower_grade_idx, 
-        fg.name AS follower_grade_name, fg.level AS follower_grade_level, fg.img_url AS follower_grade_img_url, 
-        vg.name AS view_grade_img_url, vg.img_url AS view_grade_img_url
-            FROM vote_choice vc  
-                LEFT JOIN (creator c 
-                    INNER JOIN view_grade vg ON c.view_grade_idx = vg.idx
-                    INNER JOIN follower_grade fg ON c.follower_grade_idx = fg.idx) ON vc.creator_idx = c.idx 
-            WHERE vc.vote_idx = ?;`;
-        const getVoteChoiceResult = await db.queryParam_Parse(getVoteChoiceQuery, [result[0].idx]);
+        `SELECT vc.idx AS 'choice_idx', vc.vote_idx, vc.name, vc.count, c.profile_url AS creator_profile_url, c.follower_grade_idx,
+            fg.name AS follower_grade_name, fg.level AS follower_grade_level, fg.img_url AS follower_grade_img_url,
+            vg.name AS view_grade_img_url, vg.img_url AS view_grade_img_url
+        FROM vote_choice vc  
+            LEFT JOIN (creator c 
+            INNER JOIN view_grade vg ON c.view_grade_idx = vg.idx
+            INNER JOIN follower_grade fg ON c.follower_grade_idx = fg.idx) ON vc.creator_idx = c.idx 
+            WHERE vc.vote_idx = ${result[0].vote_idx};`;
+        const getVoteChoiceResult = await db.queryParam_None(getVoteChoiceQuery);
         if(!getVoteChoiceResult){
             res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
         }else{
             result.forEach((vote, index, votes)=>{
                 result[index]["choices"] = [];
                 getVoteChoiceResult[0].forEach((choice)=>{
-                    if(choice.vote_idx == vote.idx){
+                    if(choice.vote_idx == vote.vote_idx){
                         delete choice.vote_idx;
                         result[index]["choices"].push(choice);
                     }
                 });
+
+                result[index]["choices"].forEach((choice, idx)=>{
+                    let cnt=choice.count;
+                    let rank = 1;
+                    result[index]["choices"].forEach((choice2, idx2)=>{
+                        if(choice2.count > cnt){
+                            rank++;
+                        }
+                    });
+                    result[index]["choices"][idx]["rank"]=rank;
+                });
             });
         }
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, result));
+
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, result[0]));
     }
 });
 
 // 진행중인 투표 목록 조회
 router.get('/ings', async(req, res) => {
-    const getVoteQuery = "SELECT * FROM vote WHERE start_time<=now() AND end_time>now() ORDER BY idx DESC;";
-    const getVoteResult = await db.queryParam_None(getVoteQuery);
-    const result = getVoteResult[0];
+    const {token} = req.headers;
+    let userIdx;
+    if(token){
+        const user = jwt.verify(token);
+        userIdx = user.user_idx;
+    }else{
+        userIdx = -1;
+    }
 
-    if (!result) {
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
+    const getVoteQuery =  
+    `SELECT v.idx AS 'vote_idx', v.thumbnail_url, v.create_time, v.start_time, v.end_time, v.title, v.contents, v.type,
+	(SELECT vote_choice_idx FROM user_vote uv WHERE uv.vote_idx = v.idx AND uv.user_idx=${userIdx}) AS my_choice
+    FROM vote v
+    WHERE start_time<=now() AND end_time>now() AND is_permitted = 1 ORDER BY idx DESC`;
+
+    const getVoteResult = await db.queryParam_None(getVoteQuery);
+
+    if (!getVoteResult) {
+        return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
     } else {
+        // 진행중인 투표가 없을 때 빈 배열 반환
+        if(getVoteResult.length === 0){
+            return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, []));
+        }
+        const result = getVoteResult[0];
+
         let idxList = "";
         if(result.length==0){
             idxList = "-1";
         }else{
             result.forEach((row, idx, array)=>{
-                idxList += row.idx;
+                idxList += row.vote_idx;
                 if(idx !== array.length-1){
                     idxList += ',';
                 }
             });
         }
         const getVoteChoiceQuery = 
-        `SELECT vc.idx, vc.vote_idx, vc.name, c.profile_url AS creator_profile_url, c.follower_grade_idx, 
+        `SELECT vc.idx AS 'choice_idx', vc.vote_idx, vc.name, vc.count, c.profile_url AS creator_profile_url, c.follower_grade_idx, 
         fg.name AS follower_grade_name, fg.level AS follower_grade_level, fg.img_url AS follower_grade_img_url, 
         vg.name AS view_grade_img_url, vg.img_url AS view_grade_img_url
             FROM vote_choice vc  
                 LEFT JOIN (creator c 
                     INNER JOIN view_grade vg ON c.view_grade_idx = vg.idx
                     INNER JOIN follower_grade fg ON c.follower_grade_idx = fg.idx) ON vc.creator_idx = c.idx 
-            WHERE vc.vote_idx IN (${idxList});`;
+            WHERE vc.vote_idx IN (${idxList})`;
         const getVoteChoiceResult = await db.queryParam_None(getVoteChoiceQuery);
         if(!getVoteChoiceResult){
-            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
+            return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
         }else{
             choiceResult = getVoteChoiceResult[0];
             result.forEach((vote, index, votes)=>{
                 result[index]["choices"] = [];
                 choiceResult.forEach((choice)=>{
-                    if(choice.vote_idx == vote.idx){
+                    if(choice.vote_idx == vote.vote_idx){
                         delete choice.vote_idx;
                         result[index]["choices"].push(choice);
                     }
                 });
+
+                result[index]["choices"].forEach((choice, idx)=>{
+                    let cnt=choice.count;
+                    let rank = 1;
+                    result[index]["choices"].forEach((choice2, idx2)=>{
+                        if(choice2.count > cnt){
+                            rank++;
+                        }
+                    });
+                    result[index]["choices"][idx]["rank"]=rank;
+                });
             });
         }
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, result));
+        return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, result));
     }
 });
 
 // 지난 투표 조회
 router.get('/lasts', async(req, res) => {
-    const getVoteQuery = "SELECT * FROM vote WHERE end_time <= now() ORDER BY idx DESC;";
+    const {token} = req.headers;
+    let userIdx;
+    if(token){
+        const user = jwt.verify(token);
+        userIdx = user.user_idx;
+    }else{
+        userIdx = -1;
+    }
+    const getVoteQuery = 
+    `SELECT v.idx AS 'vote_idx', v.thumbnail_url, v.create_time, v.start_time, v.end_time, v.title, v.contents, v.type,
+	(SELECT vote_choice_idx FROM user_vote uv WHERE uv.vote_idx = v.idx AND uv.user_idx=${userIdx}) AS my_choice
+    FROM vote v
+    WHERE end_time <= now() AND is_permitted = 1 ORDER BY idx DESC;`;
     const getVoteResult = await db.queryParam_None(getVoteQuery);
-    const result = getVoteResult[0];
 
-    if (!result) {
+    if (!getVoteResult) {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
     } else {
+        // 진행중인 투표가 없을 때 빈 배열 반환
+        if(getVoteResult.length === 0){
+            return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, []));
+        }
+        const result = getVoteResult[0];
+
         let idxList;
         if(result.length==0){
             idxList = "-1";
         }else{
             idxList = ""
             result.forEach((row, idx, array)=>{
-                idxList += row.idx;
+                idxList += row.vote_idx;
                 if(idx !== array.length-1){
                     idxList += ',';
                 }
             });
         }
         const getVoteChoiceQuery = 
-        `SELECT vc.idx, vc.vote_idx, vc.name, c.profile_url AS creator_profile_url, c.follower_grade_idx, 
+        `SELECT vc.idx AS 'choice_idx', vc.vote_idx, vc.name, vc.count, c.profile_url AS creator_profile_url, c.follower_grade_idx, 
         fg.name AS follower_grade_name, fg.level AS follower_grade_level, fg.img_url AS follower_grade_img_url, 
         vg.name AS view_grade_img_url, vg.img_url AS view_grade_img_url
             FROM vote_choice vc  
@@ -138,9 +215,20 @@ router.get('/lasts', async(req, res) => {
             result.forEach((vote, index, votes)=>{
                 result[index]["choices"] = [];
                 choiceResult.forEach((choice)=>{
-                    if(choice.vote_idx == vote.idx){
+                    if(choice.vote_idx == vote.vote_idx){
                         result[index]["choices"].push(choice);
                     }
+                });
+
+                result[index]["choices"].forEach((choice, idx)=>{
+                    let cnt=choice.count;
+                    let rank = 1;
+                    result[index]["choices"].forEach((choice2, idx2)=>{
+                        if(choice2.count > cnt){
+                            rank++;
+                        }
+                    });
+                    result[index]["choices"][idx]["rank"]=rank;
                 });
             });
         }
@@ -171,78 +259,66 @@ router.post('/suggestion', /*authUtil.isLoggedin,*/ async(req, res) => {
     res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, `success to suggest vote`));
 });
 
-// 에피소드 수정
-router.put('/:episodeIdx', authUtil.isAdmin, upload.single('img'), (req, res) => {
-    const {episodeIdx} = req.params;
-    const {title} = req.body;
 
-    // webtoonIdx가 없거나 title, img 전부 없으면 에러 응답
-    if(!episodeIdx || (!title && !req.file)){
-        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
-    }
-    
-    let putEpisodeQuery = "UPDATE episode SET ";
+// 투표 하기
+router.post('/:voteIdx/take', authUtil.isLoggedin, async(req, res) => {
+    const userIdx = req.decoded.user_idx;
+    const {voteIdx} = req.params;
+    const {choiceIdx} = req.body;
 
-    if(title) putEpisodeQuery += ` title = '${title}',`;
-    if(req.file) putEpisodeQuery += ` img_url = '${req.file.location}',`;
-    putEpisodeQuery = putEpisodeQuery.slice(0, putEpisodeQuery.length-1);
-
-    putEpisodeQuery += " WHERE episode_idx = ?";
-
-    db.queryParam_Parse(putEpisodeQuery, [episodeIdx], function(result){
-        if (!result) {
-            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_UPDATE_ERROR));
-        } else {
-            if(result.changedRows > 0){
-                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_UPDATE_SUCCESS));
-            }else{
-                res.status(200).send(defaultRes.successFalse(statusCode.OK, resMessage.EPISODE_UPDATE_NOTHING));
-            }
-        }
-    });
-});
-
-// 에피소드 삭제
-router.delete('/:episodeIdx', authUtil.isAdmin, async (req, res) => {
-    const { episodeIdx } = req.params;
-
-    const deleteEpisodeQuery = "DELETE FROM episode WHERE episode_idx = ?";
-    const deleteEpisodeResult = await db.queryParam_Parse(deleteEpisodeQuery, [episodeIdx]);
-
-    if (!deleteEpisodeResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_DELETE_ERROR));
-    } else {
-        if (deleteEpisodeResult.affectedRows > 0) { // 바뀐 row가 없다면
-            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_DELETE_SUCCESS));
-        } else { // 바뀐 row가 있다면
-            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_DELETE_NOTHING));
-        }
-    }
-});
-
-// 컷 생성
-router.post('/', authUtil.isAdmin, upload.single('img'), (req, res) => {
-    const {webtoonIdx, title} = req.body;
-
-    // webtoonIdx, title, comment, img 중 하나라도 없으면 에러 응답
-    if(!webtoonIdx || !title || !req.file){
-        console.log(`webtoonIdx : ${webtoonIdx}`);
-        console.log(`title : ${title}`);
-        console.log(`req.img : ${req.file}`);
+    if (!userIdx || !voteIdx || !choiceIdx) {
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
     }
 
-    const imgUrl = req.file.location;
-    const params = [webtoonIdx, title, imgUrl];
+    const insertUserVoteQuery = "INSERT INTO user_vote(vote_idx, user_idx, vote_choice_idx) VALUES(?, ?, ?)";
+    const insertUserVoteResult = await db.queryParam_Parse(insertUserVoteQuery, [voteIdx, userIdx, choiceIdx]);
+
+    if(!insertUserVoteResult){
+        return res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, `fail insert vote`));
+    }
+    const increaseVoteChoiceCountQuery = "UPDATE vote_choice SET count = count + 1 WHERE idx = ?;";
+    const increaseVoteChoiceCountResult = await db.queryParam_Parse(increaseVoteChoiceCountQuery, [choiceIdx]);
     
-    const postEpisodeQuery = "INSERT INTO episode(webtoon_idx, title, img_url, views, date) VALUES(?, ?, ?, 0, now())";
-    db.queryParam_Parse(postEpisodeQuery, params, function(result){
-        if (!result) {
-            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_INSERT_ERROR));
-        } else {
-            res.status(201).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_INSERT_SUCCESS));
-        }
-    });
+    return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, `success to take vote`));
+});
+
+// 투표 허가
+router.put('/:voteIdx/permit', authUtil.isAdmin, async(req, res) => {
+    const {voteIdx} = req.params;
+    const {startTime, endTime} = req.body;
+
+    if (!voteIdx || !startTime || !endTime) {
+        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
+    }
+
+    const permitVoteQuery = "UPDATE vote SET start_time = ?, end_time = ?, is_permitted = 1 WHERE idx = ?";
+    const permitVoteResult = await db.queryParam_Parse(permitVoteQuery, [startTime, endTime, voteIdx]);
+
+    console.log(permitVoteResult);
+    if(!permitVoteResult){
+        return res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, `fail insert vote`));
+    }
+    
+    return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, `success to permit vote`));
+});
+
+// 투표 거부
+router.put('/:voteIdx/refuse', authUtil.isAdmin, async(req, res) => {
+    const {voteIdx} = req.params;
+
+    if (!voteIdx) {
+        res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
+    }
+
+    const permitVoteQuery = "UPDATE vote SET is_permitted = 2 WHERE idx = ?";
+    const permitVoteResult = await db.queryParam_Parse(permitVoteQuery, [voteIdx]);
+
+    console.log(permitVoteResult);
+    if(!permitVoteResult){
+        return res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, `fail insert vote`));
+    }
+    
+    return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, `success to refuse vote`));
 });
 
 module.exports = router;
