@@ -34,10 +34,10 @@ router.get('/', async (req, res) => {
 
 
 //즐겨찾기한 게시판 조회 okdk
-router.get('/like', async (req, res) => {
+router.get('/like', authUtil.isLoggedin, async (req, res) => {
 
-    const {userIdx} = req.body;
-    console.log("likeboard\n");
+    const userIdx = req.decoded.user_idx;
+    console.log("ss");
     console.log(userIdx);
 
     let getLikeBoardQuery  = `SELECT b.idx, b.name,b.type FROM board b 
@@ -45,23 +45,31 @@ router.get('/like', async (req, res) => {
     WHERE user_idx = ?`;
     
     const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery,[userIdx]);
+    console.log("sss");
+    console.log(getLikeBoardResult[0]);
 
+    let ans = getLikeBoardResult[0];
+    for(var i = 0;i<getLikeBoardResult[0].length;i++){
+        ans[i]["is_love"]=1;
+    }
+
+    console.log("ans");
+    console.log(ans);
     //쿼리문의 결과가 실패이면 null을 반환한다
     if (!getLikeBoardResult) { //쿼리문이 실패했을 때
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_SELECT_ERROR));
     } else if(getLikeBoardResult.length === 0){
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_SELECT_ERROR));
     }else{ //쿼리문이 성공했을 때
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_LIKE_SELECT_SUCCESS,getLikeBoardResult[0]));
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_LIKE_SELECT_SUCCESS,ans));
     }
 });
 
 
 //즐겨찾기 하지 않은 게시판 리스트 조회 okdk
 
-router.get('/unlike', async (req, res) => {
-
-    const {userIdx} = req.body;
+router.get('/unlike', authUtil.isLoggedin,async (req, res) => {
+    const userIdx = req.decoded.user_idx;
     console.log("unlikeboard\n");
     console.log(userIdx);
     //user없는 경우
@@ -85,11 +93,22 @@ router.get('/unlike', async (req, res) => {
 
         //쿼리문의 결과가 실패이면 null을 반환한다
         if (!getLikeBoardResult) { //쿼리문이 실패했을 때
-            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_SELECT_ERROR));
+            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_UNLIKE_SELECT_ERROR));
         } else if(getLikeBoardResult.length === 0){
-            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_SELECT_ERROR));
+            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_UNLIKE_SELECT_ERROR));
         }else{ //쿼리문이 성공했을 때
-            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_LIKE_SELECT_SUCCESS,getLikeBoardResult[0]));
+
+
+            let anss = getLikeBoardResult[0];
+            for(var i = 0;i<getLikeBoardResult[0].length;i++){
+                anss[i]["is_love"]=0;
+            }
+
+            console.log("ans");
+            console.log(anss);
+
+
+            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_UNLIKE_SELECT_SUCCESS,anss));
         }
     }
 
@@ -139,7 +158,7 @@ router.post("/", authUtil.isAdmin, async(req, res)=>{
 
 
 
-// 게시판 수정
+// 게시판 수정 okdk
 router.put('/:boardIdx', authUtil.isAdmin, async(req, res) => {
     const boardIdx = req.params.boardIdx;
     
@@ -160,6 +179,7 @@ router.put('/:boardIdx', authUtil.isAdmin, async(req, res) => {
     putBoardQuery = putBoardQuery.slice(0, putBoardQuery.length-1);
     putBoardQuery += ` WHERE idx = '${boardIdx}'`;
     
+    console.log(putBoardQuery);
     let putBoardResult = await db.queryParam_None(putBoardQuery);
     if (!putBoardResult) {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_UPDATE_ERROR));
@@ -222,36 +242,34 @@ router.post('/:boardIdx/like', authUtil.isLoggedin,  async(req, res) => {
 
 
 
-//게시판 즐겨찾기 취소
-router.delete(':/boardIdx/unlike', authUtil.isLoggedin, async(req, res) => {
-   const {boardIdx} = req.params;
-    const params = [boardIdx,req.decoded.user_idx];
+//게시판 즐겨찾기 취소 OKDK
+router.delete('/:boardIdx/unlike', authUtil.isLoggedin,  async(req, res) => {
+    const {boardIdx} = req.params;
 
-
-    console.log("liketest\n");
-    console.log(params);
     // just check the
     let getLikeBoardQuery  = "SELECT * FROM board_like WHERE board_idx = ? AND user_idx = ?";
-    const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery, params);
-    
+    const getLikeBoardResult = await db.queryParam_Parse(getLikeBoardQuery, [boardIdx,req.decoded.user_idx]);
+
+
     if(!getLikeBoardResult){
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.BOARD_LIKE_SELECT_ERROR));
-    }else if(getLikeBoardResult.length != 0){//이미 즐겨찾기한 상태
+    }else if(getLikeBoardResult[0].length === 0){//즐겨찾기 안함
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.BOARD_LIKE_DELETE_ERROR));
+    }else if(getLikeBoardResult[0].length != 0){
+        const deleteLikeBoardQuery = "DELETE FROM board_like WHERE user_idx = ? and board_idx = ?";
+        const deleteLikeBoardResult = await db.queryParam_Parse(deleteLikeBoardQuery, [req.decoded.user_idx,boardIdx]);
+       
+            if (!deleteLikeBoardResult) {
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_DELETE_ERROR));
+            }else if(deleteLikeBoardResult[0].affectedRows != 1){
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USERINFO_SELECT_FAIL));
+            }
+            else{
+                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_LIKE_DELETE_SUCCESS));
+            }
+
     }
 
-    const deleteLikeQuery = "DELETE FROM board_like WHERE board_idx = ? AND user_idx = ?";
-    const deleteLikeResult = await db.queryParam_Parse(deleteLikeQuery, params);
-
-
-    deleteLikeResult.then((data)=>{
-        if (!data) {
-            return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_DELETE_ERROR));
-        }else{
-            return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_LIKE_DELETE_ERROR));
-        }
-    
-    });
 });
 
 
@@ -259,17 +277,19 @@ router.delete(':/boardIdx/unlike', authUtil.isLoggedin, async(req, res) => {
 router.get('/creator/:creatorIdx', async (req, res) => {
  const {creatorIdx} =req.params;
 //post글 board_idx  = board idx name -> 
-    let getCreatorBoardQuery = `SELECT b.idx, b.name,b.type FROM board b 
-    INNER JOIN board_creator bc ON bc.board_idx = b.idx 
-    WHERE b.type = 'creator' AND creator_idx = ?`;
+    let getCreatorBoardQuery = `SELECT b.idx AS 'board_idx',b.name ,b.type,b.creator_idx
+FROM board b 
+INNER JOIN creator c ON c.idx = b.creator_idx 
+WHERE b.type = 'creator' AND b.creator_idx = ?`;
     
     const getCreatorBoardResult = await db.queryParam_Parse(getCreatorBoardQuery,[creatorIdx]);
+    console.log(getCreatorBoardResult[0].length);
 
     //쿼리문의 결과가 실패이면 null을 반환한다
     if (!getCreatorBoardResult) { //쿼리문이 실패했을 때
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_BOARD_SELECT_ERROR));
-   } else if(getCreatorBoardResult.length === 0){
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_BOARD_SELECT_ERROR));
+   } else if(getCreatorBoardResult[0].length === 0){
+        res.status(200).send(defaultRes.successTrue(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_BOARD_SELECT_NOTHING,getCreatorBoardResult[0]));
     }else{ //쿼리문이 성공했을 때
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_BOARD_SELECT_SUCCESS,getCreatorBoardResult[0]));
     }
@@ -277,27 +297,53 @@ router.get('/creator/:creatorIdx', async (req, res) => {
 
 
 
-//게시판 검색 한글 쿼리 입력 으로 수정!!!!
+//게시판 검색  okdk
 //localhost:3000/api/boards/search?name=free&type=category
-router.get('/search', async (req, res) => {
+router.get('/search', authUtil.isLoggedin,async (req, res) => {
+ 
  let {name, type} = req.query;
+console.log("Ss");
+console.log(req.decoded);
 
+    let is_love;
+if(!req.decoded){
+    if_user = 0;//비회원이 검색시
+}else{
+    if_user = 1;//user사용자일땐
+}
 
     let getBoardSearchQuery  = "SELECT * FROM board WHERE"
-    if(name) getBoardSearchQuery+= ` name = '${name}'`;
-    if(name && type) getBoardSearchQuery+= ` AND`;
-    if(type) getBoardSearchQuery+= ` type = '${type}',`;
-
-    getBoardSearchQuery = getBoardSearchQuery.slice(0, getBoardSearchQuery.length-1);
-
-    
+    if(name) getBoardSearchQuery+= ` name LIKE '%${name}%'`;
+    if(name && type) getBoardSearchQuery+= ` OR`;
+    if(type) getBoardSearchQuery+= ` type LIKE '%${type}%',`;
+    if(type) getBoardSearchQuery = getBoardSearchQuery.slice(0, getBoardSearchQuery.length-1);
+   
+    console.log("aaaaaa");
+    console.log(getBoardSearchQuery);
     const getBoardSearchResult = await db.queryParam_None(getBoardSearchQuery);
-
+    console.log("ass");
+    console.log(getBoardSearchResult[0].length);
     //쿼리문의 결과가 실패이면 null을 반환한다
-    if (!getBoardSearchResult) { //쿼리문이 실패했을 때
+    if (!getBoardSearchResult ){
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.GET_BOARD_SEARCH_ERROR));
+    }
+    else if(getBoardSearchResult[0].length === 0) { //쿼리문이 실패했을 때
+
+        res.status(500).send(defaultRes.successTrue(statusCode.INTERNAL_SERVER_ERROR, resMessage.GET_BOARD_SEARCH_NOTHING,getBoardSearchResult[0]));
     } else { //쿼리문이 성공했을 때
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.GET_BOARD_SEARCH_SUCCESS,getBoardSearchResult[0]));
+        let ans  = JSON.parse(JSON.stringify(getBoardSearchResult[0]));
+    
+//        ans = getBoardSearchResult[0];
+        ans[0]["is_love"] = if_user;
+            if(!req.decoded){
+                ans[0]["userIdx"] = null;
+            }
+            else{
+                    ans[0]["userIdx"] = req.decoded.user_idx;
+            }
+        console.log("Aaaa");
+        console.log(ans);
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.GET_BOARD_SEARCH_SUCCESS,ans));
     }
 });
 
@@ -310,67 +356,50 @@ router.post("/request", authUtil.isLoggedin, async(req, res)=>{
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
     }
 
-        try{
-            let getBoardRequestQuery  = "SELECT idx FROM board_request WHERE name = ?";
-            const getBoardRequestResult = await db.queryParam_Parse(getBoardRequestQuery,name);
+    let getBoardRequestQuery  = "SELECT idx FROM board_request WHERE name = ?";
+    const getBoardRequestResult = await db.queryParam_Parse(getBoardRequestQuery,name);
     
-            
-            const request_idx = JSON.parse(JSON.stringify(getBoardRequestResult[0])) || null;
-            
-            if(request_idx.length === 0){
-            
-                //없으면
-                //res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.POST_BOARD_REQUEST_ERROR));
-                let postBoardRequestQuery = `INSERT INTO board_request(name, link,request_cnt) VALUES(?,?,1)`;
-                let postBoardRequestResult  = await db.queryParam_Parse(postBoardRequestQuery,[name,link]);
-            
-                if(!postBoardRequestResult){
-                    res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.POST_BOARD_REQUEST_ERROR));
-                }else{
-                    res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_BOARD_REQUEST_SUCCESS));
-                }
+    const request_idx = JSON.parse(JSON.stringify(getBoardRequestResult[0])) || null;
+    
+    let postBoardRequestResult = '';
+    let updateBoardRequestResult = '';
+    if(request_idx.length === 0){
+        //없으면
+        //res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.POST_BOARD_REQUEST_ERROR));
+        postBoardRequestQuery = `INSERT INTO board_request(name, link,request_cnt) VALUES(?,?,1)`;
+        postBoardRequestResult  = await db.queryParam_Parse(postBoardRequestQuery,[name,link]);
+    
+    }else{
+        const req_idx = request_idx[0].idx;
+    
+        updateBoardRequestQuery = `UPDATE board_request SET request_cnt = request_cnt+ 1 WHERE idx = ?`;
+        updateBoardRequestResult  = await db.queryParam_Parse(updateBoardRequestQuery,[req_idx]);
+    
+    }
 
-            }else{
-                
-            
-                const req_idx = request_idx[0].idx;
-            
-                let updateBoardRequestQuery = `UPDATE board_request SET request_cnt = request_cnt+ 1 WHERE idx = ?`;
-                let updateBoardRequestResult  = await db.queryParam_Parse(updateBoardRequestQuery,[req_idx]);
-            
-                if(!updateBoardRequestResult){
-                    res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.POST_BOARD_REQUEST_ERROR));
-                }else{
-                    res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_BOARD_REQUEST_SUCCESS));
-                }
-            }
-            
-        }catch(err){
-            console.log(err);
+        //user_request에 넣기
+
+        let postUserBoardRequestQuery = `INSERT INTO user_board_request(user_idx,board_request_idx) VALUES(?,?)`;
+        let postUserBoardRequestResult  = await db.queryParam_Parse(postUserBoardRequestQuery,[req.decoded.user_idx,request_idx[0].idx]);
+
+        if(!postUserBoardRequestResult && !postBoardRequestResult && !updateBoardRequestResult){
             res.status(200).send(defaultRes.successFalse(statusCode.DB_ERROR, resMessage.POST_BOARD_REQUEST_ERROR));
+        }else{
+            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_BOARD_REQUEST_SUCCESS));
         }
-
-
-        
-
-
-            
-                               
 });
 
 
-//게시판 요청 완료 창(성공)
-router.get('/request/:boardRequestIdx', authUtil.isLoggedin,async (req, res) => {
+//게시판 요청 완료 창 Okdk
+router.get('/request/:boardRequestIdx',async (req, res) => {
     const {boardRequestIdx} = req. params;
-    let getBoardRequestFinishedQuery  = "SELECT request_cnt FROM board_request WHERE idx = ?";
+    let getBoardRequestFinishedQuery  = "SELECT * FROM board_request WHERE idx = ?";
 
 
     const getBoardRequestFinishedResult = await db.queryParam_Parse(getBoardRequestFinishedQuery,[boardRequestIdx]);
 
-    console.log("ta\n");
-    console.log(boardRequestIdx);
     //쿼리문의 결과가 실패이면 null을 반환한다
-    if (!getBoardRequestFinishedResult) { //쿼리문이 실패했을 때
+    if (!getBoardRequestFinishedResult || getBoardRequestFinishedResult[0].length === 0) { //쿼리문이 실패했을 때
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.GET_BOARD_SEARCH_ERROR));
     } else { //쿼리문이 성공했을 때
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.GET_BOARD_SEARCH_SUCCESS,getBoardRequestFinishedResult[0]));

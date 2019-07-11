@@ -7,43 +7,35 @@ const db = require('./pool');
 
 const checkToken = (req, res, cb) => {
     var token = req.headers.token;
-    console.log("token\n");
+    console.log("token");
     console.log(token);
     if (!token) {
         //토큰이 헤더에 없으면
-        console.log("token2\n");
-    console.log(token);
-        return res.json(util.successFalse(statusCode.BAD_REQUEST, resMessage.EMPTY_TOKEN));
+        user = 0;
+        cb(user);
+        //return res.json(util.successFalse(statusCode.BAD_REQUEST, resMessage.EMPTY_TOKEN));
     } else {
         //만든 jwt 모듈 사용하여 토큰 확인
         const user = jwt.verify(token);
-        console.log("token3\n");
-    console.log(token);
 
-        console.log("user2\n");
-    console.log(user);
+
+console.log("user");
+console.log(user);
+        
+
         if (user == -3) {
             //유효기간이 지난 토큰일 때
-            console.log("token4\n");
-    console.log(token);
+        
 
-        console.log("user4\n");
-    console.log(user);
             return res.json(util.successFalse(statusCode.UNAUTHORIZED, resMessage.EXPRIED_TOKEN));
         } else if (user == -2) {
-            console.log("token5\n");
-    console.log(token);
+    
 
-        console.log("user5\n");
-    console.log(user);
             //잘못 형식의 토큰(키 값이 다르거나 등등)일 때
             return res.json(util.successFalse(statusCode.UNAUTHORIZED, resMessage.INVALID_TOKEN));
         } else {
-            console.log("token6\n");
-    console.log(token);
 
-        console.log("user6\n");
-    console.log(user);
+        
             //req.decoded에 확인한 토큰 값 넣어줌user
             req.decoded = user;
             
@@ -61,15 +53,12 @@ const authUtil = {
         checkToken(req, res, ()=>{
             next();
 
-
-        
         });
     },
     isAdmin: async(req, res, next) => {
         checkToken(req, res, (user)=>{
-            console.log("authUtilisadmin\n");
-            console.log(user);
-            
+
+
 
             if(user.grade === 'ADMIN'){
                 next();
@@ -86,8 +75,7 @@ const authUtil = {
             const getCommentsResult = db.queryParam_Parse(getCommentsQuery, [replyIdx]);
 
             getCommentsResult.then((data) => {
-                console.log("data\n");
-                console.log(data);
+  
 
                 if (!getCommentsResult) {
                     return res.json(util.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.COMMENT_SELECT_ERROR));
