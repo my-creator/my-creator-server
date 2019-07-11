@@ -4,18 +4,15 @@
 
 const pool = require('../../config/db_config');
 
-//const pool = require('../config/testdb_config');
-//const pool = require('../../config/db_config');
-
 module.exports = { // 두 개의 메소드 module화
     queryParam_None: async(...args) => { // (...args) expression은 arrow function 사
         const query = args[0];
         let result;
 
-        console.log(query);
         try {
             var connection = await pool.getConnection(); // connection을 pool에서 하나 가져온다.
             result = await connection.query(query); // query문의 결과 || null 값이 result에 들어간다.
+
         } catch (err) {
             console.log(err);
             connection.rollback(() => {});
@@ -54,9 +51,9 @@ module.exports = { // 두 개의 메소드 module화
         try {
             
             var connection = await pool.getConnection(); 
-            
+           
             result = await connection.query(query, value) || null;
-            
+        
         } catch (err) {
             console.log(err);
             connection.rollback(() => {});

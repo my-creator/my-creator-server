@@ -112,6 +112,8 @@ const passwd = req.body.passwd;
 
 
 //회원정보 수정 okdk
+//id,pw 중복 확인!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//유저가 쓴 게시글 모음?
 router.post('/', authUtil.isLoggedin,  (req, res) => {
     
     const {name,nickname,gender,birth,profile_url} = req.body;
