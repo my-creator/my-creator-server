@@ -1,10 +1,12 @@
 const request = require('request');
 const db = require('../module/utils/pool');
 const youtube_config = require('../config/youtube_config');
+const cron = require('node-cron');
 
 const baseUrl = youtube_config.BASE_URL;
 const apiKey = youtube_config.API_KEY;
 
+cron.schedule('0 0 12 * * *', async() => {
 const selectCreatorQuery = "SELECT idx, name, channel_id FROM creator";
 const selectCreatorsResult = db.queryParam_None(selectCreatorQuery)
     .then(result => {
@@ -21,6 +23,7 @@ const selectCreatorsResult = db.queryParam_None(selectCreatorQuery)
     .catch(err=>{
         console.log(err);
     });
+});
 
 function httpGet(idx, url) {
     request(url, {
@@ -55,7 +58,7 @@ function update(snippet, statistics, idx){
     
     //랭킹부분 구독자수별, 조회수별 일간핫 랭킹 구하기 위한 스케줄링 
     // yesterday = today
-    // update하기
+    // 
     // const updateYesterdayQuery = `UPDATE creator SET yesterday_youtube_subscriber_cnt=?, yesterday_youtube_view_cnt=?`
     // const todayData = [subscriberCount, viewCount];
     // const updateCreatorsResult = db.queryParam_Parse(updateYesterdayQuery, todayData)
