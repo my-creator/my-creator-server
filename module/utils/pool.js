@@ -28,7 +28,8 @@ module.exports = { // 두 개의 메소드 module화
         const value = args[1]; // array
         let result;
 
-
+        console.log(query);
+        console.log(value);
         try {
             var connection = await pool.getConnection(); // connection을 pool에서 하나 가져온다.
             result = await connection.query(query, value); // 두 번째 parameter에 배열 => query문에 들어갈 runtime 시 결정될 value
@@ -46,6 +47,7 @@ module.exports = { // 두 개의 메소드 module화
         const value = inputvalue;
         let result;
 
+        console.log(query);
         try {
             
             var connection = await pool.getConnection(); 

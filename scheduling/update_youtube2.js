@@ -9,10 +9,15 @@ const apiKey = youtube_config.API_KEY;
 
 // 이제 하루 지났으니 '오늘 랭크'는 '어제 랭크'로~
 // 어제 랭크 <- 오늘 랭크
+cron.schedule('0 0 0 * * *', () => {
 const updateLastQuery = `UPDATE creator_rank SET last_category_view_rank = current_category_view_rank
                                                     , last_all_view_rank = current_all_view_rank
                                                     , last_category_subs_rank = current_category_subs_rank
-                                                    , last_all_subs_rank = current_all_subs_rank;`
+                                                    , last_all_subs_rank = current_all_subs_rank
+                                                    , last_day_all_subs_rank = cur_day_all_subs_rank 
+                                                    , last_day_all_view_rank = cur_day_all_view_rank  
+                                                    , last_day_category_subs_rank = cur_day_category_subs_rank 
+                                                    , last_day_category_view_rank = cur_day_category_view_rank;`
 const updateLastResult = db.queryParam_None(updateLastQuery)
     .then(result => {
         console.log('then');
@@ -21,6 +26,7 @@ const updateLastResult = db.queryParam_None(updateLastQuery)
     .catch(err => {
         console.log(err);
     });
+});
 
 cron.schedule('0 0 0 * * *', () => {
     const selectCreatorQuery = "SELECT idx, name, channel_id FROM creator";

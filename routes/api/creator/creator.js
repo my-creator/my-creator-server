@@ -121,14 +121,14 @@ router.get('/:creatorIdx/newvideo/three', async (req, res) => {
 
 
 //!!!랭킹!!!!!!!!!! 
+//일간핫 빼고 다 구현함!
 
 
-//upDown 화살표 넣어줘야 함.
 //1. 전체 크리에이터 중 전체 구독자수 랭킹
 router.get('/all/subscribe/allrank', async (req, res) => {
     const getCratorAllRankQuery =
         `SELECT RANK() OVER( ORDER BY c.youtube_subscriber_cnt DESC ) AS ranking, cr.last_all_subs_rank, cr.current_all_subs_rank,
-    c.profile_url, c.name AS creatorName,
+    c.profile_url, c.name AS creatorName, c.idx,
     c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
     FROM creator c
     INNER JOIN creator_category cc ON cc.creator_idx = c.idx
@@ -145,6 +145,21 @@ router.get('/all/subscribe/allrank', async (req, res) => {
         result[i]['upDown'] = upDown;
     }
 
+    //current_rank에 데이터 넣기 위한 작업.
+    for(var i = 0; i < result.length; i++){
+        //console.log(result[i].current_all_subs_rank);
+        //console.log(result[i].ranking);
+        const creatorIdx = result[i].idx;
+        const rank = result[i].ranking;
+        // console.log(creatorIdx);
+        // console.log(rank);
+        if(result[i].current_all_subs_rank != rank){
+            const updateDBQeury = `UPDATE creator_rank cr SET current_all_subs_rank = '${rank}' WHERE cr.creator_idx = '${creatorIdx}'`;
+            const updateDBResult = await db.queryParam_None(updateDBQeury);
+            //console.log(updateDBResult);
+        }
+    }
+
     if (!getCratorAllRankResult) {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_ALL_ALLSUBSCRIBE_SELECT_ERROR));
     } else {
@@ -153,24 +168,43 @@ router.get('/all/subscribe/allrank', async (req, res) => {
 });
 
 
+
+//일간핫. 어제 오늘 차이.
+//last_subscriber_cnt 지난 구독자수  creator_dayhot_rank테이블
+//youtube_subscriber_cnt youtube_view_cnt   creator테이블
+
 //2. 전체 크리에이터 중 일간핫 구독자수 랭킹
 router.get('/all/subscribe/hotrank', async (req, res) => {
     const getCategoryIdxQuery = 
-    `SELECT RANK() OVER( ORDER BY c.youtube_subscriber_cnt DESC ) AS ranking, cr.last_all_subs_rank, cr.current_all_subs_rank, c.profile_url, 
-    c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
+    `SELECT RANK() OVER( ORDER BY c.youtube_subscriber_cnt DESC ) AS ranking, cr.last_day_all_subs_rank, cr.cur_day_all_subs_rank,
+    c.profile_url, c.idx, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
                                 FROM creator c
                                 INNER JOIN creator_category cc ON cc.creator_idx = c.idx
                                 INNER JOIN category ccc ON ccc.idx = cc.category_idx
                                 INNER JOIN follower_grade fg ON fg.idx = c.follower_grade_idx
-                                INNER JOIN creator_rank cr ON c.idx = cr.creator_idx
+                                INNER JOIN creator_dayhot_rank cr ON c.idx = cr.creator_idx
                                 ORDER BY c.youtube_subscriber_cnt DESC LIMIT 100`;
     const getCreatorCategoryResult = await db.queryParam_None(getCategoryIdxQuery);
     const result = getCreatorCategoryResult[0];
 
     let upDown;
     for (var i = 0; i < result.length; i++) {
-        upDown = result[i].last_all_subs_rank - result[i].current_all_subs_rank;
+        upDown = result[i].last_day_all_subs_rank - result[i].cur_day_all_subs_rank;
         result[i]['upDown'] = upDown;
+    }
+
+    //current_rank에 데이터 넣기 위한 작업.
+    for(var i = 0; i < result.length; i++){
+        //console.log(result[i].cur_day_all_subs_rank);
+        //console.log(result[i].ranking);
+        const creatorIdx = result[i].idx;
+        const rank = result[i].ranking;
+        // console.log(creatorIdx);
+        // console.log(rank);
+        if(result[i].cur_day_all_subs_rank != rank){
+            const updateDBQeury = `UPDATE creator_rank cr SET cur_day_all_subs_rank = '${rank}' WHERE cr.creator_idx = '${creatorIdx}'`;
+            const updateDBResult = await db.queryParam_None(updateDBQeury);
+        }
     }
 
     if (!getCreatorCategoryResult) {
@@ -182,7 +216,7 @@ router.get('/all/subscribe/hotrank', async (req, res) => {
 
 //3. 전체 크리에이터 중 전체 조회수 랭킹
 router.get('/all/view/allrank', async (req, res) => {
-    const getCategoryIdxQuery = `SELECT RANK() OVER( ORDER BY c.youtube_view_cnt DESC ) AS ranking, cr.last_all_view_rank, cr.current_all_view_rank,
+    const getCategoryIdxQuery = `SELECT RANK() OVER( ORDER BY c.youtube_view_cnt DESC ) AS ranking, cr.last_all_view_rank, cr.current_all_view_rank, c.idx,
     c.profile_url, c.name AS creatorName, c.youtube_view_cnt, fg.img_url, ccc.name AS categoryName
                                 FROM creator c
                                 INNER JOIN creator_category cc ON cc.creator_idx = c.idx
@@ -197,6 +231,21 @@ router.get('/all/view/allrank', async (req, res) => {
     for (var i = 0; i < result.length; i++) {
         upDown = result[i].last_all_view_rank - result[i].current_all_view_rank;
         result[i]['upDown'] = upDown;
+    }
+
+    //current_rank에 데이터 넣기 위한 작업.
+    for(var i = 0; i < result.length; i++){
+        //console.log(result[i].current_all_subs_rank);
+        //console.log(result[i].ranking);
+        const creatorIdx = result[i].idx;
+        const rank = result[i].ranking;
+        // console.log(creatorIdx);
+        // console.log(rank);
+        if(result[i].current_all_view_rank != rank){
+            const updateDBQeury = `UPDATE creator_rank cr SET current_all_view_rank = '${rank}' WHERE cr.creator_idx = '${creatorIdx}'`;
+            const updateDBResult = await db.queryParam_None(updateDBQeury);
+            console.log(updateDBResult);
+        }
     }
 
     if (!getCreatorCategoryResult) {
@@ -208,7 +257,7 @@ router.get('/all/view/allrank', async (req, res) => {
 
 //4. 전체 크리에이터 중 일간핫 조회수 랭킹
 router.get('/all/view/hotrank', async (req, res) => {
-    const getCategoryIdxQuery = `SELECT RANK() OVER( ORDER BY c.youtube_view_cnt DESC ) AS ranking, cr.last_all_view_rank, cr.current_all_view_rank,
+    const getCategoryIdxQuery = `SELECT RANK() OVER( ORDER BY c.youtube_view_cnt DESC ) AS ranking, cr.last_all_view_rank, cr.current_all_view_rank, c.idx,
     c.profile_url, c.name AS creatorName, c.youtube_view_cnt, fg.img_url, ccc.name AS categoryName
                                 FROM creator c
                                 INNER JOIN creator_category cc ON cc.creator_idx = c.idx
@@ -223,6 +272,20 @@ router.get('/all/view/hotrank', async (req, res) => {
     for (var i = 0; i < result.length; i++) {
         upDown = result[i].last_all_view_rank - result[i].current_all_view_rank;
         result[i]['upDown'] = upDown;
+    }
+    
+    //current_rank에 데이터 넣기 위한 작업.
+    for(var i = 0; i < result.length; i++){
+        //console.log(result[i].current_all_subs_rank);
+        //console.log(result[i].ranking);
+        const creatorIdx = result[i].idx;
+        const rank = result[i].ranking;
+        // console.log(creatorIdx);
+        // console.log(rank);
+        if(result[i].current_all_view_rank != rank){
+            const updateDBQeury = `UPDATE creator_rank cr SET current_all_view_rank = '${rank}' WHERE cr.creator_idx = '${creatorIdx}'`;
+            const updateDBResult = await db.queryParam_None(updateDBQeury);
+        }
     }
 
     if (!getCreatorCategoryResult) {
@@ -236,7 +299,7 @@ router.get('/all/view/hotrank', async (req, res) => {
 router.get('/:categoryIdx/subscribe/allrank', async (req, res) => {
     const { categoryIdx } = req.params;
 
-    const getCategoryIdxQuery = `SELECT RANK() OVER( ORDER BY c.youtube_subscriber_cnt DESC ) AS ranking, cr.last_category_subs_rank, cr.current_category_subs_rank,
+    const getCategoryIdxQuery = `SELECT RANK() OVER( ORDER BY c.youtube_subscriber_cnt DESC ) AS ranking, cr.last_category_subs_rank, cr.current_category_subs_rank, c.idx,
     c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
                                 FROM creator c
                                 INNER JOIN creator_category cc ON cc.creator_idx = c.idx
@@ -252,6 +315,20 @@ router.get('/:categoryIdx/subscribe/allrank', async (req, res) => {
     for (var i = 0; i < result.length; i++) {
         upDown = result[i].last_category_subs_rank - result[i].current_category_subs_rank;
         result[i]['upDown'] = upDown;
+    }
+
+    //current_rank에 데이터 넣기 위한 작업.
+    for(var i = 0; i < result.length; i++){
+        //console.log(result[i].current_all_subs_rank);
+        //console.log(result[i].ranking);
+        const creatorIdx = result[i].idx;
+        const rank = result[i].ranking;
+        // console.log(creatorIdx);
+        // console.log(rank);
+        if(result[i].current_category_subs_rank != rank){
+            const updateDBQeury = `UPDATE creator_rank cr SET current_category_subs_rank = '${rank}' WHERE cr.creator_idx = '${creatorIdx}'`;
+            const updateDBResult = await db.queryParam_None(updateDBQeury);
+        }
     }
 
     if (!getCreatorCategoryResult) {
@@ -265,7 +342,7 @@ router.get('/:categoryIdx/subscribe/allrank', async (req, res) => {
 //6. 카테고리별 크리에이터 중 일간핫 구독자수 랭킹 
 router.get('/:categoryIdx/subscribe/hotrank', async (req, res) => {
     const { categoryIdx } = req.params;
-    const getCategoryIdxQuery = `SELECT RANK() OVER( ORDER BY c.youtube_subscriber_cnt DESC ) AS ranking, cr.last_category_subs_rank, cr.current_category_subs_rank
+    const getCategoryIdxQuery = `SELECT RANK() OVER( ORDER BY c.youtube_subscriber_cnt DESC ) AS ranking, cr.last_category_subs_rank, cr.current_category_subs_rank, c.idx,
     c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
                                 FROM creator c
                                 INNER JOIN creator_category cc ON cc.creator_idx = c.idx
@@ -283,6 +360,20 @@ router.get('/:categoryIdx/subscribe/hotrank', async (req, res) => {
         result[i]['upDown'] = upDown;
     }
 
+    //current_rank에 데이터 넣기 위한 작업.
+    for(var i = 0; i < result.length; i++){
+        //console.log(result[i].current_all_subs_rank);
+        //console.log(result[i].ranking);
+        const creatorIdx = result[i].idx;
+        const rank = result[i].ranking;
+        // console.log(creatorIdx);
+        // console.log(rank);
+        if(result[i].current_category_subs_rank != rank){
+            const updateDBQeury = `UPDATE creator_rank cr SET current_category_subs_rank = '${rank}' WHERE cr.creator_idx = '${creatorIdx}'`;
+            const updateDBResult = await db.queryParam_None(updateDBQeury);
+        }
+    }
+
     if (!getCreatorCategoryResult) {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_CATEGORY_DAYHOTSUBSCRIBE_SELECT_ERROR));
     } else {
@@ -293,7 +384,7 @@ router.get('/:categoryIdx/subscribe/hotrank', async (req, res) => {
 //7. 카테고리별 크리에이터중 전체 조회수 랭킹 
 router.get('/:categoryIdx/view/allrank', async (req, res) => {
     const { categoryIdx } = req.params;
-    const getCategoryIdxQuery = `SELECT RANK() OVER( ORDER BY c.youtube_view_cnt DESC ) AS ranking, cr.last_category_view_rank, cr.current_category_view_rank
+    const getCategoryIdxQuery = `SELECT RANK() OVER( ORDER BY c.youtube_view_cnt DESC ) AS ranking, cr.last_category_view_rank, cr.current_category_view_rank, c.idx,
     c.profile_url, c.name AS creatorName, c.youtube_view_cnt, fg.img_url, ccc.name AS categoryName
                                 FROM creator c
                                 INNER JOIN creator_category cc ON cc.creator_idx = c.idx
@@ -311,6 +402,21 @@ router.get('/:categoryIdx/view/allrank', async (req, res) => {
         result[i]['upDown'] = upDown;
     }
 
+    //current_rank에 데이터 넣기 위한 작업.
+    for(var i = 0; i < result.length; i++){
+        //console.log(result[i].current_all_subs_rank);
+        //console.log(result[i].ranking);
+        const creatorIdx = result[i].idx;
+        const rank = result[i].ranking;
+        // console.log(creatorIdx);
+        // console.log(rank);
+        if(result[i].current_category_view_rank != rank){
+            const updateDBQeury = `UPDATE creator_rank cr SET current_category_view_rank = '${rank}' WHERE cr.creator_idx = '${creatorIdx}'`;
+            const updateDBResult = await db.queryParam_None(updateDBQeury);
+        }
+    }
+
+
     if (!getCreatorCategoryResult) {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_CATEGORY_ALLVIEW_SELECT_ERROR));
     } else {
@@ -321,7 +427,7 @@ router.get('/:categoryIdx/view/allrank', async (req, res) => {
 //8. 카테고리별 크리에이터 중 일간핫 조회수 랭킹 
 router.get('/:categoryIdx/view/hotrank', async (req, res) => {
     const { categoryIdx } = req.params;
-    const getCategoryIdxQuery = `SELECT RANK() OVER( ORDER BY c.youtube_view_cnt DESC ) AS ranking, cr.last_category_view_rank, cr.current_category_view_rank,
+    const getCategoryIdxQuery = `SELECT RANK() OVER( ORDER BY c.youtube_view_cnt DESC ) AS ranking, cr.last_category_view_rank, cr.current_category_view_rank, c.idx,
     c.profile_url, c.name AS creatorName, c.youtube_view_cnt, fg.img_url, ccc.name AS categoryName
                                 FROM creator c
                                 INNER JOIN creator_category cc ON cc.creator_idx = c.idx
@@ -335,8 +441,21 @@ router.get('/:categoryIdx/view/hotrank', async (req, res) => {
 
     let upDown;
     for (var i = 0; i < result.length; i++) {
-        upDown = result[i].last_category_view_rank - result[i].last_category_view_rank;
+        upDown = result[i].last_category_view_rank - result[i].current_category_view_rank;
         result[i]['upDown'] = upDown;
+    }
+    //current_rank에 데이터 넣기 위한 작업.
+    for(var i = 0; i < result.length; i++){
+        //console.log(result[i].current_all_subs_rank);
+        //console.log(result[i].ranking);
+        const creatorIdx = result[i].idx;
+        const rank = result[i].ranking;
+        // console.log(creatorIdx);
+        // console.log(rank);
+        if(result[i].current_category_view_rank != rank){
+            const updateDBQeury = `UPDATE creator_rank cr SET current_category_view_rank = '${rank}' WHERE cr.creator_idx = '${creatorIdx}'`;
+            const updateDBResult = await db.queryParam_None(updateDBQeury);
+        }
     }
 
     if (!getCreatorCategoryResult) {

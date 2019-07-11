@@ -10,34 +10,49 @@ const encrypt = require('../../../module/utils/encrypt');
 const db = require('../../../module/utils/pool');
 const moment = require('moment');
 const authUtil = require('../../../module/utils/authUtils');
-const jwtUtil = require('../../../module/utils/jwt');
+const jwt = require('../../../module/utils/jwt');
 
 var urlencode = require('urlencode');
 var querystring = require('querystring');
 var url = require('url');
 
-
-// 진행중인 투표 조회
-//okdk
+// 진행중인 최근 한 투표 조회
 router.get('/ings/newest', async(req, res) => {
-    const getVoteQuery = `SELECT idx AS 'vote_idx',thumbnail_url,create_time,start_time,end_time,title,contents,type,is_permitted 
-FROM vote WHERE start_time<=now() AND end_time>now() AND is_permitted = 1 ORDER BY idx DESC LIMIT 1`;
-    const getVoteResult = await db.queryParam_None(getVoteQuery);
-    const result = getVoteResult[0];
+    const {token} = req.headers;
+    let userIdx;
+    if(token){
+        const user = jwt.verify(token);
+        userIdx = user.user_idx;
+    }else{
+        userIdx = -1;
+    }
 
-    if (!result) {
+    const getVoteQuery = 
+    `SELECT v.idx AS 'vote_idx', v.thumbnail_url, v.create_time, v.start_time, v.end_time, v.title, v.contents, v.type,
+	(SELECT vote_choice_idx FROM user_vote uv WHERE uv.vote_idx = v.idx AND uv.user_idx=${userIdx}) AS my_choice
+    FROM vote v LEFT JOIN user_vote uv ON v.idx = uv.vote_idx
+    WHERE v.start_time <= now() AND v.end_time > now() AND v.is_permitted = 1 ORDER BY v.idx DESC LIMIT 1`;
+    const getVoteResult = await db.queryParam_None(getVoteQuery);
+
+    if (!getVoteResult) {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
     } else {
+        // 진행중인 투표가 없을 때 빈 배열 반환
+        if(getVoteResult.length === 0){
+            return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, []));
+        }
+        const result = getVoteResult[0];
+        
         const getVoteChoiceQuery = 
-        `SELECT vc.idx AS 'choice_idx', vc.vote_idx, vc.name, c.profile_url AS creator_profile_url, c.follower_grade_idx, 
-        fg.name AS follower_grade_name, fg.level AS follower_grade_level, fg.img_url AS follower_grade_img_url, 
-        vg.name AS view_grade_img_url, vg.img_url AS view_grade_img_url
-            FROM vote_choice vc  
-                LEFT JOIN (creator c 
-                    INNER JOIN view_grade vg ON c.view_grade_idx = vg.idx
-                    INNER JOIN follower_grade fg ON c.follower_grade_idx = fg.idx) ON vc.creator_idx = c.idx 
-            WHERE vc.vote_idx = ?;`;
-        const getVoteChoiceResult = await db.queryParam_Parse(getVoteChoiceQuery, [result[0].vote_idx]);
+        `SELECT vc.idx AS 'choice_idx', vc.vote_idx, vc.name, vc.count, c.profile_url AS creator_profile_url, c.follower_grade_idx,
+            fg.name AS follower_grade_name, fg.level AS follower_grade_level, fg.img_url AS follower_grade_img_url,
+            vg.name AS view_grade_img_url, vg.img_url AS view_grade_img_url
+        FROM vote_choice vc  
+            LEFT JOIN (creator c 
+            INNER JOIN view_grade vg ON c.view_grade_idx = vg.idx
+            INNER JOIN follower_grade fg ON c.follower_grade_idx = fg.idx) ON vc.creator_idx = c.idx 
+            WHERE vc.vote_idx = ${result[0].vote_idx};`;
+        const getVoteChoiceResult = await db.queryParam_None(getVoteChoiceQuery);
         if(!getVoteChoiceResult){
             res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
         }else{
@@ -49,22 +64,52 @@ FROM vote WHERE start_time<=now() AND end_time>now() AND is_permitted = 1 ORDER 
                         result[index]["choices"].push(choice);
                     }
                 });
+
+                result[index]["choices"].forEach((choice, idx)=>{
+                    let cnt=choice.count;
+                    let rank = 1;
+                    result[index]["choices"].forEach((choice2, idx2)=>{
+                        if(choice2.count > cnt){
+                            rank++;
+                        }
+                    });
+                    result[index]["choices"][idx]["rank"]=rank;
+                });
             });
         }
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, result));
+
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, result[0]));
     }
 });
 
 // 진행중인 투표 목록 조회
-//okdk
 router.get('/ings', async(req, res) => {
-    const getVoteQuery = "SELECT idx AS 'vote_idx',thumbnail_url,create_time,start_time,end_time,title,contents,type,is_permitted FROM vote WHERE start_time<=now() AND end_time>now() AND is_permitted = 1 ORDER BY idx DESC";
-    const getVoteResult = await db.queryParam_None(getVoteQuery);
-    const result = getVoteResult[0];
+    const {token} = req.headers;
+    let userIdx;
+    if(token){
+        const user = jwt.verify(token);
+        userIdx = user.user_idx;
+    }else{
+        userIdx = -1;
+    }
 
-    if (!result) {
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
+    const getVoteQuery =  
+    `SELECT v.idx AS 'vote_idx', v.thumbnail_url, v.create_time, v.start_time, v.end_time, v.title, v.contents, v.type,
+	(SELECT vote_choice_idx FROM user_vote uv WHERE uv.vote_idx = v.idx AND uv.user_idx=${userIdx}) AS my_choice
+    FROM vote v
+    WHERE start_time<=now() AND end_time>now() AND is_permitted = 1 ORDER BY idx DESC`;
+
+    const getVoteResult = await db.queryParam_None(getVoteQuery);
+
+    if (!getVoteResult) {
+        return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
     } else {
+        // 진행중인 투표가 없을 때 빈 배열 반환
+        if(getVoteResult.length === 0){
+            return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, []));
+        }
+        const result = getVoteResult[0];
+
         let idxList = "";
         if(result.length==0){
             idxList = "-1";
@@ -77,17 +122,17 @@ router.get('/ings', async(req, res) => {
             });
         }
         const getVoteChoiceQuery = 
-        `SELECT vc.idx AS 'choice_idx', vc.vote_idx, vc.name, c.profile_url AS creator_profile_url, c.follower_grade_idx, 
+        `SELECT vc.idx AS 'choice_idx', vc.vote_idx, vc.name, vc.count, c.profile_url AS creator_profile_url, c.follower_grade_idx, 
         fg.name AS follower_grade_name, fg.level AS follower_grade_level, fg.img_url AS follower_grade_img_url, 
         vg.name AS view_grade_img_url, vg.img_url AS view_grade_img_url
             FROM vote_choice vc  
                 LEFT JOIN (creator c 
                     INNER JOIN view_grade vg ON c.view_grade_idx = vg.idx
                     INNER JOIN follower_grade fg ON c.follower_grade_idx = fg.idx) ON vc.creator_idx = c.idx 
-            WHERE vc.vote_idx IN (${idxList});`;
+            WHERE vc.vote_idx IN (${idxList})`;
         const getVoteChoiceResult = await db.queryParam_None(getVoteChoiceQuery);
         if(!getVoteChoiceResult){
-            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
+            return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
         }else{
             choiceResult = getVoteChoiceResult[0];
             result.forEach((vote, index, votes)=>{
@@ -98,22 +143,49 @@ router.get('/ings', async(req, res) => {
                         result[index]["choices"].push(choice);
                     }
                 });
+
+                result[index]["choices"].forEach((choice, idx)=>{
+                    let cnt=choice.count;
+                    let rank = 1;
+                    result[index]["choices"].forEach((choice2, idx2)=>{
+                        if(choice2.count > cnt){
+                            rank++;
+                        }
+                    });
+                    result[index]["choices"][idx]["rank"]=rank;
+                });
             });
         }
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, result));
+        return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, result));
     }
 });
 
 // 지난 투표 조회
-//okdk
 router.get('/lasts', async(req, res) => {
-    const getVoteQuery = "SELECT idx AS 'vote_idx',thumbnail_url,create_time,start_time,end_time,title,contents,type,is_permitted FROM vote WHERE end_time <= now() AND is_permitted = 1 ORDER BY idx DESC;";
+    const {token} = req.headers;
+    let userIdx;
+    if(token){
+        const user = jwt.verify(token);
+        userIdx = user.user_idx;
+    }else{
+        userIdx = -1;
+    }
+    const getVoteQuery = 
+    `SELECT v.idx AS 'vote_idx', v.thumbnail_url, v.create_time, v.start_time, v.end_time, v.title, v.contents, v.type,
+	(SELECT vote_choice_idx FROM user_vote uv WHERE uv.vote_idx = v.idx AND uv.user_idx=${userIdx}) AS my_choice
+    FROM vote v
+    WHERE end_time <= now() AND is_permitted = 1 ORDER BY idx DESC;`;
     const getVoteResult = await db.queryParam_None(getVoteQuery);
-    const result = getVoteResult[0];
 
-    if (!result) {
+    if (!getVoteResult) {
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
     } else {
+        // 진행중인 투표가 없을 때 빈 배열 반환
+        if(getVoteResult.length === 0){
+            return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, []));
+        }
+        const result = getVoteResult[0];
+
         let idxList;
         if(result.length==0){
             idxList = "-1";
@@ -127,7 +199,7 @@ router.get('/lasts', async(req, res) => {
             });
         }
         const getVoteChoiceQuery = 
-        `SELECT vc.idx AS 'choice_idx', vc.vote_idx, vc.name, c.profile_url AS creator_profile_url, c.follower_grade_idx, 
+        `SELECT vc.idx AS 'choice_idx', vc.vote_idx, vc.name, vc.count, c.profile_url AS creator_profile_url, c.follower_grade_idx, 
         fg.name AS follower_grade_name, fg.level AS follower_grade_level, fg.img_url AS follower_grade_img_url, 
         vg.name AS view_grade_img_url, vg.img_url AS view_grade_img_url
             FROM vote_choice vc  
@@ -146,6 +218,17 @@ router.get('/lasts', async(req, res) => {
                     if(choice.vote_idx == vote.vote_idx){
                         result[index]["choices"].push(choice);
                     }
+                });
+
+                result[index]["choices"].forEach((choice, idx)=>{
+                    let cnt=choice.count;
+                    let rank = 1;
+                    result[index]["choices"].forEach((choice2, idx2)=>{
+                        if(choice2.count > cnt){
+                            rank++;
+                        }
+                    });
+                    result[index]["choices"][idx]["rank"]=rank;
                 });
             });
         }
