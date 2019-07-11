@@ -83,6 +83,18 @@ module.exports = {
     CREATE_TOKEN: "토큰 발급 완료.",
     REFRESH_TOKEN: "토큰 재발급 완료.",
 
+    VOTE_PROGRESSING_SELECT_ERROR: "진행중인 투표 조회 에러",
+    VOTE_CHOICE_SELECT_ERROR: "선택지 조회 에러",
+    VOTE_PROGRESSING_SELECT_SUCCESS: "진행중인 투표 조회 성공",
+    VOTE_PROGRESSING_LIST_SELECT_ERROR: "진행중인 투표 목록 조회 에러",
+    VOTE_PROGRESSING_CHOICE_LIST_SELECT_ERROR: "진행중인 투표 목록 선택 에러",
+    VOTE_PROGRESSING_LIST_SELECT_SUCCESS: "진행중인 투표 목록 조회 성공",
+    VOTE_LAST_SELECT_ERROR: "지난 투표 조회 에러",
+    VOTE_LAST_CHOICE_SELECT_ERROR: "지난 투표 선택 에러",
+    VOTE_LAST_SELECT_SUCCESS: "지난 투표 조회 성공",
+    VOTE_SUGGEST_ERROR: "투표 제안 에러",
+    VOTE_SUGGEST_SUCCESS: "투표 제안 성공",
+
     NO_SELECT_AUTHORITY: "조회 권한 없음.",
     USER_SELECTED: "회원 조회 성공."
 };
