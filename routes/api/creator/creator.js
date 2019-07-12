@@ -433,15 +433,20 @@ router.delete('/:creatorIdx/category/:categoryIdx', authUtil.isAdmin, async (req
 
 
 // 첫화면 실시간 핫크리에이터 조회 (1 ~ 10위)
-// router.get('/chart/hot', async (req, res) => {
-//     let resultData;
-//     try {
-//         resultData = JSON.parse(fileSys.readFileSync('hotcreatorResult.txt', 'UTF-8'));
-//         res.status(200).send(utils.successTrue(statusCode.OK, resMessage.WEBTOON_SELECTED, resultData));
-//     } catch (readFileSysError) {
-//         res.status(200).send(authUtil.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.WEBTOON_RESULT_FILESYS_ERROR));
-//     }
-// });
+router.get('/chart/hot', async (req, res) => {
+    const getCreatorSearchQuery = `SELECT c.idx AS creator_idx, c.name AS creator_name, c.current_search_cnt AS search_cnt, 
+    cr.current_realtime_search_rank AS ranking, cr.last_realtime_search_rank - cr.current_realtime_search_rank AS updown
+    FROM creator c LEFT JOIN creator_rank cr ON c.idx = cr.creator_idx
+    GROUP BY c.idx
+    ORDER BY c.current_search_cnt DESC
+    LIMIT 10;`;
+    const getCreatorSearchResult = await db.queryParam_None(getCreatorSearchQuery);
+    if (!getCreatorSearchResult) {
+    res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_LIST_BY_NAME_SELECT_ERROR));
+    } else {
+    res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_LIST_BY_NAME_SELECT_SUCCESS, getCreatorSearchResult[0]));
+    }
+});
 
 // 첫화면 실시간 핫크리에이터 조회 스케줄링 (상승세 기준 : 랭킹 (ex)7위에서 4위되면 상승)
 // cron.schedule('20 * * * * *', async() => {
