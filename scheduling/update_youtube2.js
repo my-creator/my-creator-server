@@ -108,7 +108,7 @@ cron.schedule('0 3 0 * * *', () => {
         });
 })
 
-// // 카테고리-일간-구독자  creator_dayhot_rank     last_category_subs_rank cur_category_subs_rank
+// 카테고리-일간-구독자  creator_dayhot_rank     last_category_subs_rank cur_category_subs_rank
 cron.schedule('0 3 0 * * *', () => {
     const selectCreatorQuery = "SELECT idx, youtube_subscriber_cnt, last_subscriber_cnt FROM creator c;";
     const selectCreatorsResult = db.queryParam_None(selectCreatorQuery)
@@ -136,7 +136,7 @@ cron.schedule('0 3 0 * * *', () => {
         });
 })
 
-// // 카테고리-일간-조회수  creator_dayhot_rank     last_category_view_rank cur_category_view_rank
+// 카테고리-일간-조회수  creator_dayhot_rank     last_category_view_rank cur_category_view_rank
 cron.schedule('0 3 0 * * *', () => {
     const selectCreatorQuery = "SELECT idx, youtube_view_cnt, last_view_cnt FROM creator c;";
     const selectCreatorsResult = db.queryParam_None(selectCreatorQuery)
@@ -212,7 +212,7 @@ cron.schedule('0 3 0 * * *', () => {
         });
 })
 
-// // 카테고리-전체-구독자 creator_rank last_category_subs_rank current_category_subs_rank
+// 카테고리-전체-구독자 creator_rank last_category_subs_rank current_category_subs_rank
 cron.schedule('0 3 0 * * *', () => {
     const selectCreatorQuery = "SELECT idx, youtube_subscriber_cnt, last_subscriber_cnt FROM creator c;";
     const selectCreatorsResult = db.queryParam_None(selectCreatorQuery)
@@ -240,7 +240,7 @@ cron.schedule('0 3 0 * * *', () => {
         });
 })
 
-// // 카테고리-전체-조회수  creator_rank테이블 last_category_view_rank current_category_view_rank
+// 카테고리-전체-조회수  creator_rank테이블 last_category_view_rank current_category_view_rank
 cron.schedule('0 3 0 * * *', () => {
     const selectCreatorQuery = "SELECT idx, youtube_view_cnt, last_view_cnt FROM creator c;";
     const selectCreatorsResult = db.queryParam_None(selectCreatorQuery)
