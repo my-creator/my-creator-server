@@ -120,11 +120,8 @@ router.get('/:creatorIdx/newvideo/three', async (req, res) => {
 });
 
 
-//!!!랭킹!!!!!!!!!! 
 
-
-//!!!랭킹!!!!!!!!!! 
-
+//!!!랭킹!!!!!!!!!!
 
 //1. 전체 크리에이터 중 전체 구독자수 랭킹-> ok
 router.get('/all/subscribe/allrank', async (req, res) => {
@@ -159,12 +156,12 @@ router.get('/all/subscribe/hotrank', async (req, res) => {
     const getCategoryIdxQuery = 
     `SELECT cr.last_all_subs_rank, cr.cur_all_subs_rank AS ranking,
     c.profile_url, c.idx, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
-                                FROM creator c
-                                INNER JOIN creator_category cc ON cc.creator_idx = c.idx
-                                INNER JOIN category ccc ON ccc.idx = cc.category_idx
-                                INNER JOIN follower_grade fg ON fg.idx = c.follower_grade_idx
-                                INNER JOIN creator_dayhot_rank cr ON c.idx = cr.creator_idx
-                                ORDER BY ranking ASC LIMIT 100`;
+    FROM creator c
+    INNER JOIN creator_category cc ON cc.creator_idx = c.idx
+    INNER JOIN category ccc ON ccc.idx = cc.category_idx
+    INNER JOIN follower_grade fg ON fg.idx = c.follower_grade_idx
+    INNER JOIN creator_dayhot_rank cr ON c.idx = cr.creator_idx
+    ORDER BY ranking ASC LIMIT 100`;
     const getCreatorCategoryResult = await db.queryParam_None(getCategoryIdxQuery);
     const result = getCreatorCategoryResult[0];
 
@@ -185,12 +182,12 @@ router.get('/all/subscribe/hotrank', async (req, res) => {
 router.get('/all/view/allrank', async (req, res) => {
     const getCategoryIdxQuery = `SELECT cr.last_all_view_rank, cr.current_all_view_rank AS ranking, c.idx,
     c.profile_url, c.name AS creatorName, c.youtube_view_cnt, vg.img_url, ccc.name AS categoryName
-                                FROM creator c
-                                INNER JOIN creator_category cc ON cc.creator_idx = c.idx
-                                INNER JOIN category ccc ON ccc.idx = cc.category_idx
-                                INNER JOIN view_grade vg ON vg.idx = c.view_grade_idx
-                                INNER JOIN creator_rank cr ON c.idx = cr.creator_idx
-                                ORDER BY ranking ASC LIMIT 100`;
+    FROM creator c
+    INNER JOIN creator_category cc ON cc.creator_idx = c.idx
+    INNER JOIN category ccc ON ccc.idx = cc.category_idx
+    INNER JOIN view_grade vg ON vg.idx = c.view_grade_idx
+    INNER JOIN creator_rank cr ON c.idx = cr.creator_idx
+    ORDER BY ranking ASC LIMIT 100`;
     const getCreatorCategoryResult = await db.queryParam_None(getCategoryIdxQuery);
     const result = getCreatorCategoryResult[0];
 
@@ -211,12 +208,12 @@ router.get('/all/view/allrank', async (req, res) => {
 router.get('/all/view/hotrank', async (req, res) => {
     const getCategoryIdxQuery = `SELECT cr.last_all_view_rank, cr.cur_all_view_rank AS ranking, c.idx,
     c.profile_url, c.name AS creatorName, c.youtube_view_cnt, vg.img_url, ccc.name AS categoryName
-                                FROM creator c
-                                INNER JOIN creator_category cc ON cc.creator_idx = c.idx
-                                INNER JOIN category ccc ON ccc.idx = cc.category_idx
-                                INNER JOIN view_grade vg ON vg.idx = c.view_grade_idx
-                                INNER JOIN creator_dayhot_rank cr ON c.idx = cr.creator_idx
-                                ORDER BY ranking ASC LIMIT 100`;
+    FROM creator c
+    INNER JOIN creator_category cc ON cc.creator_idx = c.idx
+    INNER JOIN category ccc ON ccc.idx = cc.category_idx
+    INNER JOIN view_grade vg ON vg.idx = c.view_grade_idx
+    INNER JOIN creator_dayhot_rank cr ON c.idx = cr.creator_idx
+    ORDER BY ranking ASC LIMIT 100`;
     const getCreatorCategoryResult = await db.queryParam_None(getCategoryIdxQuery);
     const result = getCreatorCategoryResult[0];
 
@@ -240,13 +237,13 @@ router.get('/:categoryIdx/subscribe/allrank', async (req, res) => {
     const getCategoryIdxQuery = `SELECT cr.last_category_subs_rank, cr.cur_category_subs_rank, c.idx, 
     RANK() OVER( ORDER BY cr.cur_category_subs_rank  asc ) AS ranking,
     c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
-                                FROM creator c
-                                INNER JOIN creator_category cc ON cc.creator_idx = c.idx
-                                INNER JOIN category ccc ON ccc.idx = cc.category_idx
-                                INNER JOIN follower_grade fg ON fg.idx = c.follower_grade_idx
-                                INNER JOIN creator_dayhot_rank cr ON c.idx = cr.creator_idx
-                                WHERE ccc.idx = '${categoryIdx}'
-                                ORDER BY ranking asc LIMIT 50`;
+    FROM creator c
+    INNER JOIN creator_category cc ON cc.creator_idx = c.idx
+    INNER JOIN category ccc ON ccc.idx = cc.category_idx
+    INNER JOIN follower_grade fg ON fg.idx = c.follower_grade_idx
+    INNER JOIN creator_dayhot_rank cr ON c.idx = cr.creator_idx
+    WHERE ccc.idx = '${categoryIdx}'
+    ORDER BY ranking asc LIMIT 50`;
     const getCreatorCategoryResult = await db.queryParam_None(getCategoryIdxQuery);
     const result = getCreatorCategoryResult[0];
 
@@ -270,13 +267,13 @@ router.get('/:categoryIdx/subscribe/hotrank', async (req, res) => {
     const getCategoryIdxQuery = `SELECT cr.last_category_subs_rank, cr.cur_category_subs_rank, c.idx,
     RANK() OVER( ORDER BY cr.cur_category_subs_rank  asc ) AS ranking,
         c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
-                                    FROM creator c
-                                    INNER JOIN creator_category cc ON cc.creator_idx = c.idx
-                                    INNER JOIN category ccc ON ccc.idx = cc.category_idx
-                                    INNER JOIN follower_grade fg ON fg.idx = c.follower_grade_idx
-                                    INNER JOIN creator_dayhot_rank cr ON c.idx = cr.creator_idx
-                                    WHERE ccc.idx = '${categoryIdx}'
-                                    ORDER BY ranking ASC LIMIT 50`;
+        FROM creator c
+        INNER JOIN creator_category cc ON cc.creator_idx = c.idx
+        INNER JOIN category ccc ON ccc.idx = cc.category_idx
+        INNER JOIN follower_grade fg ON fg.idx = c.follower_grade_idx
+        INNER JOIN creator_dayhot_rank cr ON c.idx = cr.creator_idx
+        WHERE ccc.idx = '${categoryIdx}'
+        ORDER BY ranking ASC LIMIT 50`;
     const getCreatorCategoryResult = await db.queryParam_None(getCategoryIdxQuery);
     const result = getCreatorCategoryResult[0];
 
@@ -299,13 +296,13 @@ router.get('/:categoryIdx/view/allrank', async (req, res) => {
     const getCategoryIdxQuery = `SELECT cr.last_category_view_rank, cr.current_category_view_rank, c.idx,
     RANK() OVER( ORDER BY cr.current_category_view_rank  asc ) AS ranking,
         c.profile_url, c.name AS creatorName, c.youtube_view_cnt, vg.img_url, ccc.name AS categoryName
-                                    FROM creator c
-                                    INNER JOIN creator_category cc ON cc.creator_idx = c.idx
-                                    INNER JOIN category ccc ON ccc.idx = cc.category_idx
-                                    INNER JOIN view_grade vg ON vg.idx = c.view_grade_idx
-                                    INNER JOIN creator_rank cr ON c.idx = cr.creator_idx
-                                    WHERE ccc.idx = '${categoryIdx}'
-                                    ORDER BY ranking ASC LIMIT 50`;
+        FROM creator c
+        INNER JOIN creator_category cc ON cc.creator_idx = c.idx
+        INNER JOIN category ccc ON ccc.idx = cc.category_idx
+        INNER JOIN view_grade vg ON vg.idx = c.view_grade_idx
+        INNER JOIN creator_rank cr ON c.idx = cr.creator_idx
+        WHERE ccc.idx = '${categoryIdx}'
+        ORDER BY ranking ASC LIMIT 50`;
     const getCreatorCategoryResult = await db.queryParam_None(getCategoryIdxQuery);
     const result = getCreatorCategoryResult[0];
 
@@ -328,13 +325,13 @@ router.get('/:categoryIdx/view/hotrank', async (req, res) => {
     const getCategoryIdxQuery = `SELECT cr.last_category_view_rank, cr.cur_category_view_rank, c.idx,
     RANK() OVER( ORDER BY cr.cur_category_view_rank  asc ) AS ranking,
         c.profile_url, c.name AS creatorName, c.youtube_view_cnt, vg.img_url, ccc.name AS categoryName
-                                    FROM creator c
-                                    INNER JOIN creator_category cc ON cc.creator_idx = c.idx
-                                    INNER JOIN category ccc ON ccc.idx = cc.category_idx
-                                    INNER JOIN view_grade vg ON vg.idx = c.view_grade_idx
-                                    INNER JOIN creator_dayhot_rank cr ON c.idx = cr.creator_idx
-                                    WHERE ccc.idx = '${categoryIdx}'
-                                    ORDER BY ranking ASC LIMIT 50`;
+        FROM creator c
+        INNER JOIN creator_category cc ON cc.creator_idx = c.idx
+        INNER JOIN category ccc ON ccc.idx = cc.category_idx
+        INNER JOIN view_grade vg ON vg.idx = c.view_grade_idx
+        INNER JOIN creator_dayhot_rank cr ON c.idx = cr.creator_idx
+        WHERE ccc.idx = '${categoryIdx}'
+        ORDER BY ranking ASC LIMIT 50`;
     const getCreatorCategoryResult = await db.queryParam_None(getCategoryIdxQuery);
     const result = getCreatorCategoryResult[0];
 

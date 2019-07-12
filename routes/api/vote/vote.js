@@ -160,6 +160,55 @@ router.get('/ings', async(req, res) => {
     }
 });
 
+// 지난 투표 조회 - 홈화면
+router.get('/lasts/home', async(req, res) => {
+    const {token} = req.headers;
+    let userIdx;
+    if(token){
+        const user = jwt.verify(token);
+        userIdx = user.user_idx;
+    }else{
+        userIdx = -1;
+    }
+    const getVoteQuery = 
+    `SELECT idx AS vote_idx, thumbnail_url, title FROM vote 
+    WHERE end_time<=now() AND is_permitted = 1 ORDER BY idx DESC
+    LIMIT 3`;
+    const getVoteResult = await db.queryParam_None(getVoteQuery);
+
+    if (!getVoteResult) {
+        return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
+    } else {
+        // 진행중인 투표가 없을 때 빈 배열 반환
+        if(getVoteResult.length === 0){
+            return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, []));
+        }
+        const result = getVoteResult[0];
+
+        result.forEach((data, index, array) => {
+            const getVoteChoiceQuery = 
+            `SELECT vc.idx AS choice_idx, c.profile_url, vc.name, vc.count
+            FROM vote_choice vc LEFT JOIN creator c ON vc.creator_idx = c.idx
+            WHERE vc.vote_idx = ${data.vote_idx}
+            ORDER BY vc.count LIMIT 1;`;
+            const getVoteChoiceResult = db.queryParam_None(getVoteChoiceQuery);
+            getVoteChoiceResult.then((vote_choice)=>{
+                if(!vote_choice){
+                    return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
+                }else{
+                    const choice = vote_choice[0];
+                    result[index]["choice_idx"] = choice[0].choice_idx;
+                    result[index]["profile_url"] = choice[0].profile_url;
+                    result[index]["choice_name"] = choice[0].name;
+                }    
+                if(index === array.length - 1){
+                    return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, result));
+                }
+            });
+        });
+    }
+});
+
 // 지난 투표 조회
 router.get('/lasts', async(req, res) => {
     const {token} = req.headers;
