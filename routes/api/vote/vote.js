@@ -160,6 +160,55 @@ router.get('/ings', async(req, res) => {
     }
 });
 
+// 지난 투표 조회 - 홈화면
+router.get('/lasts/home', async(req, res) => {
+    const {token} = req.headers;
+    let userIdx;
+    if(token){
+        const user = jwt.verify(token);
+        userIdx = user.user_idx;
+    }else{
+        userIdx = -1;
+    }
+    const getVoteQuery = 
+    `SELECT idx AS vote_idx, thumbnail_url, title FROM vote 
+    WHERE end_time<=now() AND is_permitted = 1 ORDER BY idx DESC
+    LIMIT 3`;
+    const getVoteResult = await db.queryParam_None(getVoteQuery);
+
+    if (!getVoteResult) {
+        return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
+    } else {
+        // 진행중인 투표가 없을 때 빈 배열 반환
+        if(getVoteResult.length === 0){
+            return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, []));
+        }
+        const result = getVoteResult[0];
+
+        result.forEach((data, index, array) => {
+            const getVoteChoiceQuery = 
+            `SELECT vc.idx AS choice_idx, c.profile_url, vc.name, vc.count
+            FROM vote_choice vc LEFT JOIN creator c ON vc.creator_idx = c.idx
+            WHERE vc.vote_idx = ${data.vote_idx}
+            ORDER BY vc.count LIMIT 1;`;
+            const getVoteChoiceResult = db.queryParam_None(getVoteChoiceQuery);
+            getVoteChoiceResult.then((vote_choice)=>{
+                if(!vote_choice){
+                    return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
+                }else{
+                    const choice = vote_choice[0];
+                    result[index]["choice_idx"] = choice[0].choice_idx;
+                    result[index]["profile_url"] = choice[0].profile_url;
+                    result[index]["choice_name"] = choice[0].name;
+                }    
+                if(index === array.length - 1){
+                    return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, result));
+                }
+            });
+        });
+    }
+});
+
 // 지난 투표 조회
 router.get('/lasts', async(req, res) => {
     const {token} = req.headers;
@@ -233,6 +282,74 @@ router.get('/lasts', async(req, res) => {
             });
         }
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, result));
+    }
+});
+
+// 제안한 투표 목록 조회
+router.get('/suggestions', authUtil.isAdmin, async(req, res) => {
+    const getVoteQuery =  
+    `SELECT v.idx AS 'vote_idx', v.thumbnail_url, v.create_time, v.start_time, v.end_time, v.title, v.contents, v.type
+    FROM vote v
+    WHERE is_permitted = 0 ORDER BY idx DESC`;
+
+    const getVoteResult = await db.queryParam_None(getVoteQuery);
+
+    if (!getVoteResult) {
+        return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
+    } else {
+        // 진행중인 투표가 없을 때 빈 배열 반환
+        if(getVoteResult.length === 0){
+            return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, []));
+        }
+        const result = getVoteResult[0];
+
+        let idxList = "";
+        if(result.length==0){
+            idxList = "-1";
+        }else{
+            result.forEach((row, idx, array)=>{
+                idxList += row.vote_idx;
+                if(idx !== array.length-1){
+                    idxList += ',';
+                }
+            });
+        }
+        const getVoteChoiceQuery = 
+        `SELECT vc.idx AS 'choice_idx', vc.vote_idx, vc.name, vc.count, c.profile_url AS creator_profile_url, c.follower_grade_idx, 
+        fg.name AS follower_grade_name, fg.level AS follower_grade_level, fg.img_url AS follower_grade_img_url, 
+        vg.name AS view_grade_img_url, vg.img_url AS view_grade_img_url
+            FROM vote_choice vc  
+                LEFT JOIN (creator c 
+                    INNER JOIN view_grade vg ON c.view_grade_idx = vg.idx
+                    INNER JOIN follower_grade fg ON c.follower_grade_idx = fg.idx) ON vc.creator_idx = c.idx 
+            WHERE vc.vote_idx IN (${idxList})`;
+        const getVoteChoiceResult = await db.queryParam_None(getVoteChoiceQuery);
+        if(!getVoteChoiceResult){
+            return res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.EPISODE_SELECT_ERROR));
+        }else{
+            choiceResult = getVoteChoiceResult[0];
+            result.forEach((vote, index, votes)=>{
+                result[index]["choices"] = [];
+                choiceResult.forEach((choice)=>{
+                    if(choice.vote_idx == vote.vote_idx){
+                        delete choice.vote_idx;
+                        result[index]["choices"].push(choice);
+                    }
+                });
+
+                result[index]["choices"].forEach((choice, idx)=>{
+                    let cnt=choice.count;
+                    let rank = 1;
+                    result[index]["choices"].forEach((choice2, idx2)=>{
+                        if(choice2.count > cnt){
+                            rank++;
+                        }
+                    });
+                    result[index]["choices"][idx]["rank"]=rank;
+                });
+            });
+        }
+        return res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.EPISODE_SELECT_SUCCESS, result));
     }
 });
 

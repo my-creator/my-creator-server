@@ -9,5 +9,5 @@ router.use('/posts', require('./post/index'));
 router.use('/replies',require('./replies/index'));
 router.use('/hashtags', require('./hashtags/index'));
 router.use('/categories', require('./categories/index'));
-
+router.use('/auth', require('./auth/index'));
 module.exports = router;

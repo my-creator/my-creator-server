@@ -16,6 +16,7 @@ const jwtUtil = require('../../../module/utils/jwt');
 
 
 // 댓글 작성 OKDK
+
 router.post('/', authUtil.isLoggedin, async(req, res) => {
     const {postIdx,comments,is_anonymous} = req.body;
     const userIdx = req.decoded.user_idx;
@@ -47,7 +48,6 @@ router.post('/', authUtil.isLoggedin, async(req, res) => {
         
 });
 
-
 // 댓글 조회성공 okdk
 //유저명 시간 내용
 router.get('/:postIdx', async(req, res) => {
@@ -55,7 +55,7 @@ router.get('/:postIdx', async(req, res) => {
     
     const getCommentsQuery = `SELECT r.idx,r.post_idx,r.user_idx,r.content,date_format(r.create_time,'%Y-%m-%d %h:%i') AS reply_create_time,r.is_anonymous, u.name,u.profile_url
     FROM ( reply r INNER JOIN user u ON u.idx = r.user_idx) 
-    WHERE r.post_idx = ? GROUP BY r.idx ORDER BY r.create_time ASC`;
+	WHERE r.post_idx = ? GROUP BY r.idx ORDER BY r.create_time ASC`;
     const getCommentsResult = await db.queryParam_Parse(getCommentsQuery, [postIdx]);
 
     if (!getCommentsResult) {

@@ -22,6 +22,7 @@ const jwt = require('../../../module/utils/jwt');
 //시간!!!!!!!!!
 //cron보류
 //3개 핫배너 붙는거
+
 router.get('/listhot/:boardIdx', async (req, res) => {
  const boardIdx = req.params.boardIdx;
 let getPosthotQuery  = `SELECT p.idx AS 'post_idx', p.board_idx,p.user_idx,p.title,p.contents,
@@ -44,9 +45,12 @@ ORDER BY p.like_cnt DESC LIMIT 3`;//인기글 1로 나머지 다 0으로 / 시�
         console.log("kz");
         console.log(anss); 
     //쿼리문의 결과가 실패이면 null을 반환한다
-    if (!getPosthotResult || getPosthotResult[0].length === 0) { //쿼리문이 실패했을 때
+    if (!getPosthotResult ) { //쿼리문이 실패했을 때
         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_SELECT_ERROR));
-    } else{
+    } else if(getPosthotResult[0].length === 0 || anss.length === 0){
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_SELECT_ERROR,anss));
+    }
+    else{
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_SELECT_SUCCESS,anss));
     }
 });
@@ -75,7 +79,7 @@ ORDER BY like_cnt DESC LIMIT 3`;
         answer[i] = ans[i].idx;
     }
     
-    console.log(answer);//45,47,46
+    console.log(answer);//45,47,46//[]
 
     if(!getResult){
 
@@ -87,19 +91,29 @@ p.view_cnt,p.like_cnt,p.hate_cnt,p.is_anonymous,p.image_cnt,p.video_cnt,p.thumbn
 WHERE idx NOT IN (?)
 AND p.board_idx = ? 
 ORDER BY p.create_time DESC`;//인기글 1로 나머지 다 0으로 / 시간 순서 최신순이 위에 
-    const getPostResult = await db.queryParam_Parse(getPostQuery,[answer,boardIdx]);
-    
-    let aaaa = getPostResult[0];
-    for(var i = 0;i<aaaa.length;i++){
-        aaaa[i]["hot_image"] =0;    
-    }
 
-    console.log("aaaa");
-    console.log(aaaa);
+    const getPostResult = await db.queryParam_Parse(getPostQuery,[answer,boardIdx]);
+
+        //console.log("aass");    
+       //console.log(getPostResult);//undefined
+        //console.log(getPostResult[0].length);
+    
+
+   
         //쿼리문의 결과가 실패이면 null을 반환한다
-        if (!getPostResult || getPostResult[0].length === 0) { //쿼리문이 실패했을 때
-            res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_SELECT_ERROR));
+        if (!getPostResult){
+            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_SELECT_ERROR,[]));
+        }else if(getPostResult[0].length === 0) { //쿼리문이 실패했을 때
+            res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_SELECT_ERROR,[]));
         } else { //쿼리문이 성공했을 때
+            let aaaa = getPostResult[0];
+            for(var i = 0;i<aaaa.length;i++){
+                aaaa[i]["hot_image"] =0;    
+            }
+
+             console.log("aaaa");
+    console.log(aaaa);
+
             res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_SELECT_SUCCESS,aaaa));
         }
     }
@@ -110,22 +124,22 @@ ORDER BY p.create_time DESC`;//인기글 1로 나머지 다 0으로 / 시간 순
 });
 
 
-
 //게시글 상세 조회 다~ okdk
 //게시글 미디오 한장만일때임
 //
 router.get('/detail/:postIdx', async (req, res) => {
 
+
  const {postIdx} = req.params;
-    let getPostQuery  = `SELECT p.idx AS 'post_idx',p.board_idx,b.name AS 'board_name',p.user_idx AS 'write_user_idx',p.title,p.contents,p.view_cnt,date_format(p.create_time,'%Y-%m-%d %h:%i') 
+    let getPostQuery  = `SELECT p.idx AS 'post_idx',p.board_idx,b.name AS 'board_name',p.user_idx AS 'write_user_idx',p.thumbnail_url AS 'thumbnail_url',p.title,p.contents,p.view_cnt,
+date_format(p.create_time,'%Y-%m-%d %h:%i') 
 AS 'create_time',p.is_anonymous, u.id, u.nickname, u.profile_url , COUNT(r.idx) AS 'reply_cnt' ,pm.type AS 'media_type',pm.media_url AS 'media_url'
     FROM post p 
     INNER JOIN post_media pm ON pm.post_idx = p.idx
     INNER JOIN user u ON u.idx = p.user_idx
-    INNER JOIN reply r ON p.idx = r.post_idx
     INNER JOIN board b ON b.idx = p.board_idx
+    INNER JOIN reply r ON r.user_idx = u.idx
     WHERE p.idx = ?`;
-
     const getPostResult = await db.queryParam_Parse(getPostQuery,[postIdx]);
 
     const ans = JSON.parse(JSON.stringify(getPostResult));
@@ -713,6 +727,7 @@ router.delete('/:postIdx/unhate', authUtil.isLoggedin,  async(req, res) => {
 
 
 // 게시글 생성 okdk
+
 router.post('/', authUtil.isLoggedin, upload.array('imgs'), async (req, res) => {
     const {boardIdx,title,contents,is_anonymous} = req.body;
     const userIdx = req.decoded.user_idx;
@@ -770,6 +785,7 @@ router.post('/', authUtil.isLoggedin, upload.array('imgs'), async (req, res) => 
             break;
         }else if(image_cnt === 1){
             thumbnail_url =imgUrl[i].location;
+            console.log("Aa");
         }
     }
 
@@ -826,7 +842,7 @@ router.post('/', authUtil.isLoggedin, upload.array('imgs'), async (req, res) => 
         }
         //post_media에 각자 넣기
         let postPostimgQuery = "INSERT INTO post_media(post_idx,type,media_url) VALUES(?,?,?)";
-        postPostimgResult = await db.queryParam_Parse(postPostimgQuery,[post_idx,mimeType,imgUrl[i].location]);
+        postPostimgResult = await db.queryParam_Parse(postPostimgQuery,[post_idx,"IMAGE",imgUrl[0].location]);
     }
 
         if ( postPostResult[0].length === 0 || !postPostResult) { //쿼리문이 실패했을 때
@@ -839,6 +855,9 @@ router.post('/', authUtil.isLoggedin, upload.array('imgs'), async (req, res) => 
         }
 
 });
+
+
+
 
 
 
@@ -939,3 +958,4 @@ router.delete('/:postIdx', authUtil.isLoggedin,  async(req, res) => {
 
 
 module.exports = router;
+
