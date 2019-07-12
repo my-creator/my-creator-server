@@ -220,6 +220,10 @@ WHERE h.user_idx = 12 AND post_idx = 43;*/
                         ans[0][0]["is_hate"] = 1;
                     }
 
+                if(ans[0][0]["is_like"] === ans[0][0]["is_hate"]){
+                    ans[0][0]["is_like"] = 0;
+                    ans[0][0]["is_hate"] = 0;
+                }
 
                     res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_SELECT_SUCCESS, ans[0]));
                             
