@@ -235,7 +235,7 @@ router.get('/:categoryIdx/subscribe/allrank', async (req, res) => {
     const { categoryIdx } = req.params;
 
     const getCategoryIdxQuery = `SELECT cr.last_category_subs_rank, cr.cur_category_subs_rank, c.idx, 
-    RANK() OVER( ORDER BY cr.cur_category_subs_rank  asc ) AS ranking,
+    ROW_NUMBER() OVER( ORDER BY cr.cur_category_subs_rank  asc ) AS ranking,
     c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
     FROM creator c
     INNER JOIN creator_category cc ON cc.creator_idx = c.idx
@@ -265,7 +265,7 @@ router.get('/:categoryIdx/subscribe/allrank', async (req, res) => {
 router.get('/:categoryIdx/subscribe/hotrank', async (req, res) => {
     const { categoryIdx } = req.params;
     const getCategoryIdxQuery = `SELECT cr.last_category_subs_rank, cr.cur_category_subs_rank, c.idx,
-    RANK() OVER( ORDER BY cr.cur_category_subs_rank  asc ) AS ranking,
+    ROW_NUMBER() OVER( ORDER BY cr.cur_category_subs_rank  asc ) AS ranking,
         c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
         FROM creator c
         INNER JOIN creator_category cc ON cc.creator_idx = c.idx
@@ -294,7 +294,7 @@ router.get('/:categoryIdx/subscribe/hotrank', async (req, res) => {
 router.get('/:categoryIdx/view/allrank', async (req, res) => {
     const { categoryIdx } = req.params;
     const getCategoryIdxQuery = `SELECT cr.last_category_view_rank, cr.current_category_view_rank, c.idx,
-    RANK() OVER( ORDER BY cr.current_category_view_rank  asc ) AS ranking,
+    ROW_NUMBER() OVER( ORDER BY cr.current_category_view_rank  asc ) AS ranking,
         c.profile_url, c.name AS creatorName, c.youtube_view_cnt, vg.img_url, ccc.name AS categoryName
         FROM creator c
         INNER JOIN creator_category cc ON cc.creator_idx = c.idx
