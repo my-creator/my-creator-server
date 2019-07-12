@@ -1,15 +1,15 @@
 var express = require('express');
 var router = express.Router();
 
-const upload = require('../config/multer');
-const defaultRes = require('../module/utils/utils');
-const statusCode = require('../module/utils/statusCode');
-const resMessage = require('../module/utils/responseMessage');
-const encrypt = require('../module/utils/encrypt');
-const db = require('../module/utils/pool');
+const upload = require('../../../config/multer');
+const defaultRes = require('../../../module/utils/utils');
+const statusCode = require('../../../module/utils/statusCode');
+const resMessage = require('../../../module/utils/responseMessage');
+const encrypt = require('../../../module/utils/encrypt');
+const db = require('../../../module/utils/pool');
 const moment = require('moment');
-const authUtil = require('../module/utils/authUtils');
-const jwtUtil = require('../module/utils/jwt');
+const authUtil = require('../../../module/utils/authUtils');
+const jwtUtil = require('../../../module/utils/jwt');
 
 //로그인 ok's
 
@@ -61,8 +61,8 @@ router.post('/signup', async (req, res) => {
         res.status(200).send(defaultRes.successFalse(statusCode.BAD_REQUEST, resMessage.OUT_OF_VALUE));
     }
 
-    const getMembershipQuery = `SELECT * FROM user WHERE id =  '${id}'`;
-    const getMembershipResult = await db.queryParam_None(getMembershipQuery, [id]);
+    const getMembershipQuery = "SELECT * FROM user WHERE id = ?";
+    const getMembershipResult = await db.queryParam_Parse(getMembershipQuery, [id]);
 
 
 
@@ -95,7 +95,7 @@ router.post('/signup', async (req, res) => {
                                     res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.USERINFO_SELECT_FAIL));
                                 }
                                 else{
-                                    res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.MEMBERSHIP_INSERT_SUCCESS, [id, passwd, salt, name, nickname, gender, birth, grade]));
+                                    res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.MEMBERSHIP_INSERT_SUCCESS));
                                 }
                     
                 }
