@@ -67,7 +67,6 @@ router.get('/like', authUtil.isLoggedin, async (req, res) => {
 
 
 //즐겨찾기 하지 않은 게시판 리스트 조회 okdk
-
 router.get('/unlike', authUtil.isLoggedin,async (req, res) => {
     const userIdx = req.decoded.user_idx;
     console.log("unlikeboard\n");
@@ -111,7 +110,23 @@ router.get('/unlike', authUtil.isLoggedin,async (req, res) => {
             res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_UNLIKE_SELECT_SUCCESS,anss));
         }
     }
+});
 
+//즐겨찾기 하지 않은 게시판 리스트 조회 - 로그인되지 않은 상태 okdk
+router.get('/unlike/guest', async (req, res) => {
+    let getLikeBoardQuery = `SELECT * FROM board ;`;
+
+    const getLikeBoardResult = await db.queryParam_None(getLikeBoardQuery);
+
+    //쿼리문의 결과가 실패이면 null을 반환한다
+    if (!getLikeBoardResult) { //쿼리문이 실패했을 때
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_UNLIKE_SELECT_ERROR));
+    } else if (getLikeBoardResult.length === 0) {
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.BOARD_UNLIKE_SELECT_ERROR));
+    } else { //쿼리문이 성공했을 때
+
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_UNLIKE_SELECT_SUCCESS, getLikeBoardResult[0]));
+    }
 });
 
 
