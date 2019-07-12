@@ -200,7 +200,10 @@ WHERE h.user_idx = 12 AND post_idx = 43;*/
                 const getUserLikeQuery = "SELECT * FROM `like` l WHERE l.user_idx = ? AND l.post_idx = ?";
                 const getUserLikeResult = await db.queryParam_Parse(getUserLikeQuery,[userIdx,postIdx]);
                     
-                    if(!getUserLikeResult){
+                console.log("###########");
+                console.log(getUserLikeResult);
+                        // TODO: 변경필요 . 쿼리 에러 안 나면 무조건 1뜸
+                    if(!getUserLikeResult || getUserLikeResult[0].length===0){
                         ans[0][0]["is_like"] = 0;
                     }else{
                         ans[0][0]["is_like"] = 1;
@@ -210,7 +213,8 @@ WHERE h.user_idx = 12 AND post_idx = 43;*/
                 const getUserHateResult = await db.queryParam_Parse(getUserHateQuery,[userIdx,postIdx]);
 
 
-                    if(!getUserHateResult){
+                        // TODO: 변경필요 . 쿼리 에러 안 나면 무조건 1뜸
+                    if(!getUserHateResult || getUserHateResult[0].length ===0){
                         ans[0][0]["is_hate"] = 0;
                     }else{
                         ans[0][0]["is_hate"] = 1;
