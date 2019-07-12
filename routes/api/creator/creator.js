@@ -121,10 +121,9 @@ router.get('/:creatorIdx/newvideo/three', async (req, res) => {
 
 
 //!!!랭킹!!!!!!!!!! 
-//일간핫 빼고 다 구현함!
 
 
-//1. 전체 크리에이터 중 전체 구독자수 랭킹
+//1. 전체 크리에이터 중 전체 구독자수 랭킹-> ok
 router.get('/all/subscribe/allrank', async (req, res) => {
     const getCratorAllRankQuery =
         `SELECT cr.last_all_subs_rank, cr.current_all_subs_rank AS ranking,
@@ -152,13 +151,7 @@ router.get('/all/subscribe/allrank', async (req, res) => {
     }
 });
 
-
-
-//일간핫. 어제 오늘 차이.
-//last_subscriber_cnt 지난 구독자수  creator_rank테이블
-//youtube_subscriber_cnt  creator테이블
-
-//2. 전체 크리에이터 중 일간핫 구독자수 랭킹
+//2. 전체 크리에이터 중 일간핫 구독자수 랭킹-> ok
 router.get('/all/subscribe/hotrank', async (req, res) => {
     const getCategoryIdxQuery = 
     `SELECT cr.last_all_subs_rank, cr.cur_all_subs_rank AS ranking,
@@ -185,7 +178,7 @@ router.get('/all/subscribe/hotrank', async (req, res) => {
     }
 });
 
-//3. 전체 크리에이터 중 전체 조회수 랭킹
+//3. 전체 크리에이터 중 전체 조회수 랭킹-> ok
 router.get('/all/view/allrank', async (req, res) => {
     const getCategoryIdxQuery = `SELECT cr.last_all_view_rank, cr.current_all_view_rank AS ranking, c.idx,
     c.profile_url, c.name AS creatorName, c.youtube_view_cnt, fg.img_url, ccc.name AS categoryName
@@ -211,7 +204,7 @@ router.get('/all/view/allrank', async (req, res) => {
     }
 });
 
-//4. 전체 크리에이터 중 일간핫 조회수 랭킹
+//4. 전체 크리에이터 중 일간핫 조회수 랭킹-> ok
 router.get('/all/view/hotrank', async (req, res) => {
     const getCategoryIdxQuery = `SELECT cr.last_all_view_rank, cr.cur_all_view_rank AS ranking, c.idx,
     c.profile_url, c.name AS creatorName, c.youtube_view_cnt, fg.img_url, ccc.name AS categoryName
@@ -237,7 +230,7 @@ router.get('/all/view/hotrank', async (req, res) => {
     }
 });
 
-//5. 카테고리별 크리에이터중 전체 구독자수 랭킹  last_category_subs_rank
+//5. 카테고리별 크리에이터중 전체 구독자수 랭킹-> ok
 router.get('/:categoryIdx/subscribe/allrank', async (req, res) => {
     const { categoryIdx } = req.params;
 
@@ -267,7 +260,7 @@ router.get('/:categoryIdx/subscribe/allrank', async (req, res) => {
 });
 
 
-//6. 카테고리별 크리에이터 중 일간핫 구독자수 랭킹 
+//6. 카테고리별 크리에이터 중 일간핫 구독자수 랭킹 -> ok
 router.get('/:categoryIdx/subscribe/hotrank', async (req, res) => {
     const { categoryIdx } = req.params;
     const getCategoryIdxQuery = `SELECT cr.last_category_subs_rank, cr.cur_category_subs_rank AS ranking, c.idx,
@@ -295,7 +288,7 @@ router.get('/:categoryIdx/subscribe/hotrank', async (req, res) => {
     }
 });
 
-//7. 카테고리별 크리에이터중 전체 조회수 랭킹 
+//7. 카테고리별 크리에이터중 전체 조회수 랭킹 -> ok
 router.get('/:categoryIdx/view/allrank', async (req, res) => {
     const { categoryIdx } = req.params;
     const getCategoryIdxQuery = `SELECT cr.last_category_view_rank, cr.current_category_view_rank AS ranking, c.idx,
@@ -323,7 +316,7 @@ router.get('/:categoryIdx/view/allrank', async (req, res) => {
     }
 });
 
-//8. 카테고리별 크리에이터 중 일간핫 조회수 랭킹 
+//8. 카테고리별 크리에이터 중 일간핫 조회수 랭킹 -> ok
 router.get('/:categoryIdx/view/hotrank', async (req, res) => {
     const { categoryIdx } = req.params;
     const getCategoryIdxQuery = `SELECT cr.last_category_view_rank, cr.cur_category_view_rank AS ranking, c.idx,
