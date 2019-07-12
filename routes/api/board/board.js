@@ -34,6 +34,8 @@ router.get('/', async (req, res) => {
 
 
 //즐겨찾기한 게시판 조회 okdk
+
+//즐겨찾기한 게시판 조회 okdk
 router.get('/like', authUtil.isLoggedin, async (req, res) => {
 
     const userIdx = req.decoded.user_idx;
@@ -65,8 +67,8 @@ router.get('/like', authUtil.isLoggedin, async (req, res) => {
     }
 });
 
-
 //즐겨찾기 하지 않은 게시판 리스트 조회 okdk
+
 router.get('/unlike', authUtil.isLoggedin,async (req, res) => {
     const userIdx = req.decoded.user_idx;
     console.log("unlikeboard\n");
@@ -128,9 +130,6 @@ router.get('/unlike/guest', async (req, res) => {
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.BOARD_UNLIKE_SELECT_SUCCESS, getLikeBoardResult[0]));
     }
 });
-
-
-
 
 // 게시판 생성 okdk
 router.post("/", authUtil.isAdmin, async(req, res)=>{
@@ -289,6 +288,8 @@ router.delete('/:boardIdx/unlike', authUtil.isLoggedin,  async(req, res) => {
 
 
 //크리에이터 팬 게시판 조회
+
+//크리에이터 팬 게시판 조회
 router.get('/creator/:creatorIdx', async (req, res) => {
  const {creatorIdx} =req.params;
 //post글 board_idx  = board idx name -> 
@@ -333,8 +334,6 @@ if(!req.decoded){
     if(type) getBoardSearchQuery+= ` type LIKE '%${type}%',`;
     if(type) getBoardSearchQuery = getBoardSearchQuery.slice(0, getBoardSearchQuery.length-1);
    
-    console.log("aaaaaa");
-    console.log(getBoardSearchQuery);
     const getBoardSearchResult = await db.queryParam_None(getBoardSearchQuery);
     console.log("ass");
     console.log(getBoardSearchResult[0].length);

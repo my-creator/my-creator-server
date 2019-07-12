@@ -120,10 +120,9 @@ router.get('/:creatorIdx/newvideo/three', async (req, res) => {
 });
 
 
-
+//1. 전체 크리에이터 중 전체 구독자수 랭킹
 //!!!랭킹!!!!!!!!!!
-
-//1. 전체 크리에이터 중 전체 구독자수 랭킹-> ok
+//일간핫 빼고 다 구현함!
 router.get('/all/subscribe/allrank', async (req, res) => {
     const getCratorAllRankQuery =
         `SELECT cr.last_all_subs_rank, cr.current_all_subs_rank AS ranking,
@@ -151,9 +150,10 @@ router.get('/all/subscribe/allrank', async (req, res) => {
     }
 });
 
-//2. 전체 크리에이터 중 일간핫 구독자수 랭킹-> ok
+
+//2. 전체 크리에이터 중 일간핫 구독자수 랭킹
 router.get('/all/subscribe/hotrank', async (req, res) => {
-    const getCategoryIdxQuery = 
+    const getCategoryIdxQuery =
     `SELECT cr.last_all_subs_rank, cr.cur_all_subs_rank AS ranking,
     c.profile_url, c.idx, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
     FROM creator c
@@ -178,7 +178,7 @@ router.get('/all/subscribe/hotrank', async (req, res) => {
     }
 });
 
-//3. 전체 크리에이터 중 전체 조회수 랭킹-> ok
+//3. 전체 크리에이터 중 전체 조회수 랭킹
 router.get('/all/view/allrank', async (req, res) => {
     const getCategoryIdxQuery = `SELECT cr.last_all_view_rank, cr.current_all_view_rank AS ranking, c.idx,
     c.profile_url, c.name AS creatorName, c.youtube_view_cnt, vg.img_url, ccc.name AS categoryName
@@ -204,7 +204,7 @@ router.get('/all/view/allrank', async (req, res) => {
     }
 });
 
-//4. 전체 크리에이터 중 일간핫 조회수 랭킹-> ok
+//4. 전체 크리에이터 중 일간핫 조회수 랭킹
 router.get('/all/view/hotrank', async (req, res) => {
     const getCategoryIdxQuery = `SELECT cr.last_all_view_rank, cr.cur_all_view_rank AS ranking, c.idx,
     c.profile_url, c.name AS creatorName, c.youtube_view_cnt, vg.img_url, ccc.name AS categoryName
@@ -230,7 +230,7 @@ router.get('/all/view/hotrank', async (req, res) => {
     }
 });
 
-//5. 카테고리별 크리에이터중 전체 구독자수 랭킹-> ok
+//5. 카테고리별 크리에이터중 전체 구독자수 랭킹  last_category_subs_rank
 router.get('/:categoryIdx/subscribe/allrank', async (req, res) => {
     const { categoryIdx } = req.params;
 
@@ -261,7 +261,7 @@ router.get('/:categoryIdx/subscribe/allrank', async (req, res) => {
 });
 
 
-//6. 카테고리별 크리에이터 중 일간핫 구독자수 랭킹 -> ok
+//6. 카테고리별 크리에이터 중 일간핫 구독자수 랭킹
 router.get('/:categoryIdx/subscribe/hotrank', async (req, res) => {
     const { categoryIdx } = req.params;
     const getCategoryIdxQuery = `SELECT cr.last_category_subs_rank, cr.cur_category_subs_rank, c.idx,
@@ -290,7 +290,7 @@ router.get('/:categoryIdx/subscribe/hotrank', async (req, res) => {
     }
 });
 
-//7. 카테고리별 크리에이터중 전체 조회수 랭킹 -> ok
+//7. 카테고리별 크리에이터중 전체 조회수 랭킹
 router.get('/:categoryIdx/view/allrank', async (req, res) => {
     const { categoryIdx } = req.params;
     const getCategoryIdxQuery = `SELECT cr.last_category_view_rank, cr.current_category_view_rank, c.idx,
@@ -319,7 +319,7 @@ router.get('/:categoryIdx/view/allrank', async (req, res) => {
     }
 });
 
-//8. 카테고리별 크리에이터 중 일간핫 조회수 랭킹 -> ok
+//8. 카테고리별 크리에이터 중 일간핫 조회수 랭킹
 router.get('/:categoryIdx/view/hotrank', async (req, res) => {
     const { categoryIdx } = req.params;
     const getCategoryIdxQuery = `SELECT cr.last_category_view_rank, cr.cur_category_view_rank, c.idx,
@@ -347,6 +347,10 @@ router.get('/:categoryIdx/view/hotrank', async (req, res) => {
         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_CATEGORY_DAYHOTVIEW_SELECT_SUCCESS, getCreatorCategoryResult[0]));
     }
 });
+	
+
+
+
 
 // 크리에이터 검색 - 크리크리에 있는 크리에이터 전체인원 ok 
 router.get('/allcreatorcnt', async (req, res) => {
@@ -361,20 +365,22 @@ router.get('/allcreatorcnt', async (req, res) => {
 });
 
 // 크리에이터 검색 - 크리에이터 정보 ok
+// 크리에이터 검색 - 크리에이터 정보 ok
 router.get('/creatorSearch', async (req, res) => {
-    const { name } = req.query;
-    const getCreatorSearchQuery = `SELECT c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
-                                    FROM creator c
-                                    INNER JOIN follower_grade fg ON c.follower_grade_idx = fg.idx
-                                    INNER JOIN creator_category cc ON cc.creator_idx = c.idx
-                                    INNER JOIN category ccc ON ccc.idx = cc.category_idx
-                                    WHERE c.name LIKE '%${name}%'`;
-    const getCreatorSearchResult = await db.queryParam_None(getCreatorSearchQuery);
-    if (!getCreatorSearchResult) {
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_LIST_BY_NAME_SELECT_ERROR));
-    } else {
-        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_LIST_BY_NAME_SELECT_SUCCESS, getCreatorSearchResult[0]));
-    }
+   const { name } = req.query;
+   const getCreatorSearchQuery = `SELECT c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt,
+                                   fg.img_url, ccc.name AS categoryName, c.idx
+                                   FROM creator c
+                                   INNER JOIN follower_grade fg ON c.follower_grade_idx = fg.idx
+                                   INNER JOIN creator_category cc ON cc.creator_idx = c.idx
+                                   INNER JOIN category ccc ON ccc.idx = cc.category_idx
+                                   WHERE c.name LIKE '%${name}%'`;
+   const getCreatorSearchResult = await db.queryParam_None(getCreatorSearchQuery);
+   if (!getCreatorSearchResult) {
+       res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_LIST_BY_NAME_SELECT_ERROR));
+   } else {
+       res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_LIST_BY_NAME_SELECT_SUCCESS, getCreatorSearchResult[0]));
+   }
 });
 
 // 크리에이터 해시태그 추가 -> ok
@@ -390,7 +396,6 @@ router.post('/:creatorIdx/hashtag/:hashtagIdx', authUtil.isAdmin, async (req, re
         }
     });
 });
-
 // 크리에이터 해시태그 삭제 -> ok
 router.delete('/:creatorIdx/hashtag/:hashtagIdx', authUtil.isAdmin, async (req, res) => {
     const { creatorIdx, hashtagIdx } = req.params;
@@ -434,11 +439,12 @@ router.delete('/:creatorIdx/category/:categoryIdx', authUtil.isAdmin, async (req
     }
 });
 
+// 첫화면 실시간 핫크리에이터 조회 (1 ~ 10위) => 상승세 기준 : 랭킹 (ex)7위에서 4위되면 상승
 
 
 // 첫화면 실시간 핫크리에이터 조회 (1 ~ 10위)
 router.get('/chart/hot', async (req, res) => {
-    const getCreatorSearchQuery = `SELECT c.idx AS creator_idx, c.name AS creator_name, c.current_search_cnt AS search_cnt, 
+    const getCreatorSearchQuery = `SELECT c.idx AS creatorIdx, c.name AS creatorName, c.current_search_cnt AS searchCnt, 
     cr.current_realtime_search_rank AS ranking, cr.last_realtime_search_rank - cr.current_realtime_search_rank AS updown
     FROM creator c LEFT JOIN creator_rank cr ON c.idx = cr.creator_idx
     GROUP BY c.idx
@@ -451,37 +457,6 @@ router.get('/chart/hot', async (req, res) => {
     res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_LIST_BY_NAME_SELECT_SUCCESS, getCreatorSearchResult[0]));
     }
 });
-
-// 첫화면 실시간 핫크리에이터 조회 스케줄링 (상승세 기준 : 랭킹 (ex)7위에서 4위되면 상승)
-// cron.schedule('20 * * * * *', async() => {
-
-
-//     //updown 화살표 구현 해야함!!!!!!!
-//     //1. 파일을 읽는다
-//     //2. 2중 포문을 돌린다//     //WHERE search_time >= date_add(now(), interval -1 day)  필요한지 검토 필요.
-//     const getHotCreatorsQuery = `SELECT c.*, cs.cnt FROM creator c 
-//         INNER JOIN (SELECT creator_idx, 
-//         COUNT(*) AS cnt FROM creator_search WHERE search_time >= date_add(now(), interval -1 day) 
-//         GROUP BY creator_idx) cs ON c.idx = cs.creator_idx ORDER BY cs.cnt DESC LIMIT 0, 10`;
-//     const getHotCreatorsResult = await db.queryParam_None(getHotCreatorsQuery);
-//     //3. 현재 데이터의 인덱스와 (일치하는)과거의 데이터와 인덱스 비교 후 upDown을 지정한다
-//     //4. 완성된 객체를 파일 저장한다
-//     getHotCreatorsResult[0].upDown
-
-//     if (!getHotCreatorsResult) {
-//         console.log("getHotCreatorsResult ERROR")
-//         //res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_HOT_SELECT_ERROR));
-//     } else {
-//         try {
-//             fileSys.writeFileSync('hotcreatorResult.txt', JSON.stringify(getHotCreatorsQuery), 'UTF-8');
-//         } catch (resultError) {
-//             console.log(resultError);
-//         }
-//     }
-// });
-
-
-
 
 // 해시태그별 크리에이터 목록 조회  ok  => 보류.....ㅠㅠㅠㅠㅠㅠㅠ
 // router.get('/search/hashtag', async (req, res) => {
@@ -527,7 +502,6 @@ router.get('/chart/hot', async (req, res) => {
 //         } else {
 //             res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_LIST_BY_CATEGORY_SELECT_SUCCESS, getCreatorCategoryResult));
 //         }
-//     }
-// });
+
 module.exports = router;
 

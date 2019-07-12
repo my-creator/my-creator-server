@@ -22,7 +22,9 @@ const jwtUtil = require('../../../../module/utils/jwt');
 //순위
 //카테고리 먹방 2위!!
 
-//search_time
+
+//search_tim});
+
 router.get('/:creatorIdx', async (req, res) => {
     const { creatorIdx } = req.params;
 
@@ -30,7 +32,7 @@ router.get('/:creatorIdx', async (req, res) => {
     const getCreatorProfileQuery = `SELECT c.idx AS 'creator_idx',c.view_grade_idx,c.follower_grade_idx,c.profile_url,c.name AS'creator_name',c.youtube_subscriber_cnt,
 c.youtube_view_cnt,c.follower_cnt,c.contents,c.channel_id,date_format(c.create_time,'%Y-%m-%d %h:%i') AS 'creator_create_time',
 ca.name AS 'category_name',ca.idx AS 'category_idx', 
-vg.name AS 'view_grade_name',vg.img_url AS 'view_grade_img_url',vg.view_cnt AS 'view_grade_view_cnt',
+vg.name AS 'view_grade_name',vg.img_url AS 'view_grade_img_url',vg.view_cnt AS 'view_grade_view_cnt',vg.profile_asset AS 'profile_asset',
 fg.name AS 'follower_grade_name',fg.level AS 'follower_grade_level',fg.img_url AS 'follower_grade_img_url',fg.follower_cnt AS 'follower_grade_follower_cnt',
 b.idx AS 'board_idx' ,b.name AS 'board_name',b.type AS 'board_type'
     FROM creator c 
@@ -38,19 +40,36 @@ b.idx AS 'board_idx' ,b.name AS 'board_name',b.type AS 'board_type'
     INNER JOIN follower_grade fg ON fg.idx = c.follower_grade_idx 
     INNER JOIN creator_category cc ON cc.creator_idx = c.idx 
     INNER JOIN category ca ON ca.idx = cc.category_idx 
-    INNER JOIN board b ON b.creator_idx = c.idx
+    LEFT OUTER JOIN board b ON b.creator_idx = c.idx
     WHERE c.idx = ?`;
     const getCreatorProfileResult = await db.queryParam_Parse(getCreatorProfileQuery, [creatorIdx]);
 
 //    console.log(getCreatorProfileResult);
 //    const result = getCreatorProfileResult[0];
-    const result = JSON.parse(JSON.stringify(getCreatorProfileResult[0][0]));
-    //console.log("Resutl");
-//    console.log(result);
+
+//console.log(getCreatorProfileResult[0]);
+
+//console.log(getCreatorProfileResult);
+    
+    let flev = 0;
+    if (!getCreatorProfileResult) {
+        console.log("543");
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_PROFILE_ERROR));
+    } else if(getCreatorProfileResult[0].length === 0){
+        console.log("2352");
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_PROFILE_NOTHING));
+    }
+    else{
+//        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_SELECT_PROFILE_SUCCESS, getCreatorPrifileResult));
+        
+        const result = JSON.parse(JSON.stringify(getCreatorProfileResult[0][0]));
+    console.log(result);
 
     const category_json = JSON.parse(JSON.stringify(getCreatorProfileResult));
     const categoryIdx = category_json[0][0].category_idx;
     const youtube_subscriber_cnt = category_json[0][0].youtube_subscriber_cnt;
+
+
     const follower_cnt = category_json[0][0].follower_grade_follower_cnt;
     const follower_grade_idx = category_json[0][0].follower_grade_idx;
     const follower_grade_level = category_json[0][0].follower_grade_level;
@@ -59,67 +78,78 @@ b.idx AS 'board_idx' ,b.name AS 'board_name',b.type AS 'board_type'
     const youtube_view_cnt = category_json[0][0].youtube_view_cnt;
     const view_grade_name = category_json[0][0].view_grade_name;
 
-
-
-    let flev = 0;
-    if (!result) {
-        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_PROFILE_ERROR));
-    } else {
-//        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_SELECT_PROFILE_SUCCESS, getCreatorPrifileResult));
-        
-
         switch (follower_grade_name){
         case  "브론즈":
+        console.log("66");
         flev = (youtube_subscriber_cnt - follower_cnt)/200*100;
             result["back_lank_exp"] = follower_cnt+99;
             break;
         case "실버" :
+        console.log("55");
             result["back_lank_exp"] = follower_cnt+999;
             flev = (youtube_subscriber_cnt - follower_cnt)/2000*100;
             break;
         case "골드":
+        console.log("44");
         flev = (youtube_subscriber_cnt - follower_cnt)/20000*100;
             result["back_lank_exp"] = follower_cnt+9999;
             break;
-        case "플래티넘":
+        case "플레티넘":
+        console.log("33");
             result["back_lank_exp"] = follower_cnt+99999;
             flev = (youtube_subscriber_cnt - follower_cnt)/200000*100;
             break;
         case "다이아" :
+            console.log("22");
             result["back_lank_exp"] = follower_cnt+999999;
              flev = (youtube_subscriber_cnt - follower_cnt)/2000000*100;
             break;
-        default:
+        case "마스터":
+        console.log("11");
             flev = 0;
             result["back_lank_exp"] = 0;
         
     }
 
+    console.log("flevss");
+    console.log(flev);
 
     let flex = 0;
     switch (view_grade_name){
         case  "F":
+        console.log("f");
             flex = youtube_view_cnt/100000*100;
             result["back_lank2_exp"] = 100000;
             break;
         case "D" :
-            flex = youtube_view_cnt/9000000*100;
+        console.log("d");
+            flex = youtube_view_cnt/900000*100;
             result["back_lank2_exp"] = 1000000;
             break;
         case "C":
+        console.log("c");
+            flex = youtube_view_cnt/9000000*100;
+            result["back_lank2_exp"] = 10000000;
+            break;
+        case "B":
+        console.log("b");
             flex = youtube_view_cnt/90000000*100;
             result["back_lank2_exp"] = 10000000;
             break;
+
         case "A":
+        console.log("a");
             flex = youtube_view_cnt/900000000*100;
             result["back_lank2_exp"] = 100000000;
             break;
-        default :
-            flev = 0;
+        case "S":
+        console.log("s");
+            flex = 0;
             result["back_lank2_exp"] = 0;
            
     }
-
+        console.log("flex");
+        console.log(flex);
 
 
             //1등급이면 *2
@@ -185,6 +215,10 @@ SELECT cc.creator_idx ,c.*
     }
     }
 });
+
+
+
+
 
 
 
