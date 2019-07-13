@@ -438,7 +438,7 @@ router.get('/todayhot', async (req, res) => {
     let getTodayHotPostQuery  = `SELECT p.idx AS 'post_idx', p.board_idx,p.user_idx,p.title,p.contents,
 date_format(p.create_time,'%Y-%m-%d %h:%i') AS 'create_time', date_format(p.update_time,'%Y-%m-%d %h:%i') AS 'update_time',
 p.view_cnt,p.like_cnt,p.hate_cnt,p.is_anonymous,p.image_cnt,p.video_cnt,p.thumbnail_url,b.*,u.name
-, (SELECT COUNT(*) FROM reply WhERE post_idx = p.idx)
+, (SELECT COUNT(*) FROM reply WhERE post_idx = p.idx) AS reply_cnt
     FROM ( post p INNER JOIN board b ON b.idx = p.board_idx)
     INNER JOIN user u ON u.idx = p.user_idx
     WHERE p.create_time >= CURDATE() 
@@ -460,7 +460,7 @@ router.get('/todaynew', async (req, res) => {
     let getTodayHotPostQuery  = `SELECT p.idx AS 'post_idx', p.board_idx,p.user_idx,p.title,p.contents,
 date_format(p.create_time,'%Y-%m-%d %h:%i') AS 'create_time', date_format(p.update_time,'%Y-%m-%d %h:%i') AS 'update_time',
 p.view_cnt,p.like_cnt,p.hate_cnt,p.is_anonymous,p.image_cnt,p.video_cnt,p.thumbnail_url,b.*,u.name
-, (SELECT COUNT(*) FROM reply WhERE post_idx = p.idx)
+, (SELECT COUNT(*) FROM reply WhERE post_idx = p.idx) AS reply_cnt
     FROM ( post p INNER JOIN board b ON b.idx = p.board_idx)
     INNER JOIN user u ON u.idx = p.user_idx
     WHERE p.create_time >= CURDATE() 
