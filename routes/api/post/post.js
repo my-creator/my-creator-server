@@ -801,7 +801,7 @@ router.post('/', authUtil.isLoggedin, upload.array('imgs'), async (req, res) => 
 
     console.log(boardIdx,title,contents,is_anonymous,video_cnt,image_cnt,thumbnail_url,userIdx);
     //게시글 db에 제목,내용 넣기
-    let postPostQuery = "INSERT INTO post(board_idx, user_idx, title, contents,create_time,is_anonymous,image_cnt,video_cnt,thumbnail_url) VALUES(?,?, ?, ?,now(),?,?,?,?)";
+    let postPostQuery = "INSERT INTO post(board_idx, user_idx, title, contents,is_anonymous,image_cnt,video_cnt,thumbnail_url) VALUES(?,?, ?, ?,?,?,?,?)";
     let postPostResult  = await db.queryParam_Parse(postPostQuery, [boardIdx,userIdx,title,contents,is_anonymous,image_cnt,video_cnt,thumbnail_url]);
 
     console.log('#########');
