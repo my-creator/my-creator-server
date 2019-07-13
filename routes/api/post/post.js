@@ -131,6 +131,9 @@ router.get('/detail/:postIdx', async (req, res) => {
 
 
  const {postIdx} = req.params;
+ let updateViewCntQuery  = `UPDATE post SET view_cnt = view_cnt + 1 WHERE idx = ?`;
+ const updateViewCntResult = await db.queryParam_Parse(updateViewCntQuery,[postIdx]);
+
     let getPostQuery  = `SELECT p.idx AS 'post_idx',p.board_idx,b.name AS 'board_name',p.user_idx AS 'write_user_idx',p.thumbnail_url AS 'thumbnail_url',p.title,p.contents,p.view_cnt,
 date_format(p.create_time,'%Y-%m-%d %h:%i') 
 AS 'create_time',p.is_anonymous, u.id, u.nickname, u.profile_url , COUNT(r.idx) AS 'reply_cnt' ,pm.type AS 'media_type',pm.media_url AS 'media_url'
