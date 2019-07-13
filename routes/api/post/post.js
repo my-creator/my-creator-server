@@ -131,6 +131,9 @@ router.get('/detail/:postIdx', async (req, res) => {
 
 
  const {postIdx} = req.params;
+ let updateViewCntQuery  = `UPDATE post SET view_cnt = view_cnt + 1 WHERE idx = ?`;
+ const updateViewCntResult = await db.queryParam_Parse(updateViewCntQuery,[postIdx]);
+
     let getPostQuery  = `SELECT p.idx AS 'post_idx',p.board_idx,b.name AS 'board_name',p.user_idx AS 'write_user_idx',p.thumbnail_url AS 'thumbnail_url',p.title,p.contents,p.view_cnt,
 date_format(p.create_time,'%Y-%m-%d %h:%i') 
 AS 'create_time',p.is_anonymous, u.id, u.nickname, u.profile_url , COUNT(r.idx) AS 'reply_cnt' ,pm.type AS 'media_type',pm.media_url AS 'media_url'
@@ -200,7 +203,10 @@ WHERE h.user_idx = 12 AND post_idx = 43;*/
                 const getUserLikeQuery = "SELECT * FROM `like` l WHERE l.user_idx = ? AND l.post_idx = ?";
                 const getUserLikeResult = await db.queryParam_Parse(getUserLikeQuery,[userIdx,postIdx]);
                     
-                    if(!getUserLikeResult){
+                console.log("###########");
+                console.log(getUserLikeResult);
+                        // TODO: 변경필요 . 쿼리 에러 안 나면 무조건 1뜸
+                    if(!getUserLikeResult || getUserLikeResult[0].length===0){
                         ans[0][0]["is_like"] = 0;
                     }else{
                         ans[0][0]["is_like"] = 1;
@@ -210,12 +216,17 @@ WHERE h.user_idx = 12 AND post_idx = 43;*/
                 const getUserHateResult = await db.queryParam_Parse(getUserHateQuery,[userIdx,postIdx]);
 
 
-                    if(!getUserHateResult){
+                        // TODO: 변경필요 . 쿼리 에러 안 나면 무조건 1뜸
+                    if(!getUserHateResult || getUserHateResult[0].length ===0){
                         ans[0][0]["is_hate"] = 0;
                     }else{
                         ans[0][0]["is_hate"] = 1;
                     }
 
+                if(ans[0][0]["is_like"] === ans[0][0]["is_hate"]){
+                    ans[0][0]["is_like"] = 0;
+                    ans[0][0]["is_hate"] = 0;
+                }
 
                     res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_SELECT_SUCCESS, ans[0]));
                             
@@ -731,7 +742,6 @@ router.delete('/:postIdx/unhate', authUtil.isLoggedin,  async(req, res) => {
 router.post('/', authUtil.isLoggedin, upload.array('imgs'), async (req, res) => {
     const {boardIdx,title,contents,is_anonymous} = req.body;
     const userIdx = req.decoded.user_idx;
-    const createTime = moment().format("YYYY-MM-DD");
     const imgUrl = req.files;
     let video_cnt = 0;
     let image_cnt = 0;
@@ -791,8 +801,8 @@ router.post('/', authUtil.isLoggedin, upload.array('imgs'), async (req, res) => 
 
     console.log(boardIdx,title,contents,is_anonymous,video_cnt,image_cnt,thumbnail_url,userIdx);
     //게시글 db에 제목,내용 넣기
-    let postPostQuery = "INSERT INTO post(board_idx, user_idx, title, contents,create_time,is_anonymous,image_cnt,video_cnt,thumbnail_url) VALUES(?,?, ?, ?,?,?,?,?,?)";
-    let postPostResult  = await db.queryParam_Parse(postPostQuery, [boardIdx,userIdx,title,contents,createTime,is_anonymous,image_cnt,video_cnt,thumbnail_url]);
+    let postPostQuery = "INSERT INTO post(board_idx, user_idx, title, contents,create_time,is_anonymous,image_cnt,video_cnt,thumbnail_url) VALUES(?,?, ?, ?,now(),?,?,?,?)";
+    let postPostResult  = await db.queryParam_Parse(postPostQuery, [boardIdx,userIdx,title,contents,is_anonymous,image_cnt,video_cnt,thumbnail_url]);
 
     console.log('#########');
     console.log(postPostResult);

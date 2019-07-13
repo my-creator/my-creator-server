@@ -318,8 +318,8 @@ WHERE b.type = 'creator' AND b.creator_idx = ?`;
 router.get('/search', authUtil.isLoggedin,async (req, res) => {
  
  let {name, type} = req.query;
-console.log("Ss");
-console.log(req.decoded);
+ console.log("name: " + name);
+ console.log("type: " + type);
 
     let is_love;
 if(!req.decoded){
@@ -328,14 +328,14 @@ if(!req.decoded){
     if_user = 1;//user사용자일땐
 }
 
-    let getBoardSearchQuery  = "SELECT * FROM board WHERE"
+    let getBoardSearchQuery  = "SELECT * FROM board"
+    if(name || type) getBoardSearchQuery+= ` WHERE`;
     if(name) getBoardSearchQuery+= ` name LIKE '%${name}%'`;
-    if(name && type) getBoardSearchQuery+= ` OR`;
+    if(name && type) getBoardSearchQuery+= ` AND`;
     if(type) getBoardSearchQuery+= ` type LIKE '%${type}%',`;
     if(type) getBoardSearchQuery = getBoardSearchQuery.slice(0, getBoardSearchQuery.length-1);
-   
+    console.log(getBoardSearchQuery);
     const getBoardSearchResult = await db.queryParam_None(getBoardSearchQuery);
-    console.log("ass");
     console.log(getBoardSearchResult[0].length);
     //쿼리문의 결과가 실패이면 null을 반환한다
     if (!getBoardSearchResult ){

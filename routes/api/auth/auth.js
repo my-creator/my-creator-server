@@ -75,7 +75,7 @@ router.post('/signup', async (req, res) => {
         encrypt.getSalt(res, async (salt) => {
             encrypt.getHashedPassword(passwd, salt, res, async (hashedPassword) => {
 
-                const insertMembershipQuery = "INSERT INTO user (id,passwd,salt,name,nickname,gender,birth,grade) VALUES (?, ?, ?, ?,?,?,?,?)";
+                const insertMembershipQuery = "INSERT INTO user (id,passwd,salt,name,nickname,gender,birth) VALUES (?, ?, ?, ?,?,?,?)";
                 const insertMembershipResult = await db.queryParam_Parse(insertMembershipQuery, [id, hashedPassword, salt, name, nickname, gender, birth, grade]);
 
 //                console.log(insertMembershipResult[0].insertId);

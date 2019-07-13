@@ -190,7 +190,7 @@ router.get('/lasts/home', async(req, res) => {
             `SELECT vc.idx AS choice_idx, c.profile_url, vc.name, vc.count
             FROM vote_choice vc LEFT JOIN creator c ON vc.creator_idx = c.idx
             WHERE vc.vote_idx = ${data.vote_idx}
-            ORDER BY vc.count LIMIT 1;`;
+            ORDER BY vc.count DESC LIMIT 1;`;
             const getVoteChoiceResult = db.queryParam_None(getVoteChoiceQuery);
             getVoteChoiceResult.then((vote_choice)=>{
                 if(!vote_choice){
