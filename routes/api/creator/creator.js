@@ -235,7 +235,7 @@ router.get('/:categoryIdx/subscribe/allrank', async (req, res) => {
     const { categoryIdx } = req.params;
 
     const getCategoryIdxQuery = `SELECT cr.last_category_subs_rank, cr.cur_category_subs_rank, c.idx, 
-    ROW_NUMBER() OVER( ORDER BY cr.cur_category_subs_rank  asc ) AS ranking,
+    ROW_NUMBER() OVER( ORDER BY c.youtube_subscriber_cnt DESC ) AS ranking,
     c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
     FROM creator c
     INNER JOIN creator_category cc ON cc.creator_idx = c.idx
@@ -243,7 +243,7 @@ router.get('/:categoryIdx/subscribe/allrank', async (req, res) => {
     INNER JOIN follower_grade fg ON fg.idx = c.follower_grade_idx
     INNER JOIN creator_dayhot_rank cr ON c.idx = cr.creator_idx
     WHERE ccc.idx = '${categoryIdx}'
-    ORDER BY ranking asc LIMIT 50`;
+    ORDER BY c.youtube_subscriber_cnt DESC LIMIT 50`;
     const getCreatorCategoryResult = await db.queryParam_None(getCategoryIdxQuery);
     const result = getCreatorCategoryResult[0];
 
@@ -294,7 +294,7 @@ router.get('/:categoryIdx/subscribe/hotrank', async (req, res) => {
 router.get('/:categoryIdx/view/allrank', async (req, res) => {
     const { categoryIdx } = req.params;
     const getCategoryIdxQuery = `SELECT cr.last_category_view_rank, cr.current_category_view_rank, c.idx,
-    ROW_NUMBER() OVER( ORDER BY cr.current_category_view_rank  asc ) AS ranking,
+    ROW_NUMBER() OVER( ORDER BY c.youtube_view_cnt DESC) AS ranking,
         c.profile_url, c.name AS creatorName, c.youtube_view_cnt, vg.img_url, ccc.name AS categoryName
         FROM creator c
         INNER JOIN creator_category cc ON cc.creator_idx = c.idx
@@ -302,7 +302,7 @@ router.get('/:categoryIdx/view/allrank', async (req, res) => {
         INNER JOIN view_grade vg ON vg.idx = c.view_grade_idx
         INNER JOIN creator_rank cr ON c.idx = cr.creator_idx
         WHERE ccc.idx = '${categoryIdx}'
-        ORDER BY ranking ASC LIMIT 50`;
+        ORDER BY c.youtube_view_cnt DESC LIMIT 50`;
     const getCreatorCategoryResult = await db.queryParam_None(getCategoryIdxQuery);
     const result = getCreatorCategoryResult[0];
 
