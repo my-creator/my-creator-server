@@ -439,10 +439,11 @@ router.get('/todayhot', async (req, res) => {
 date_format(p.create_time,'%Y-%m-%d %h:%i') AS 'create_time', date_format(p.update_time,'%Y-%m-%d %h:%i') AS 'update_time',
 p.view_cnt,p.like_cnt,p.hate_cnt,p.is_anonymous,p.image_cnt,p.video_cnt,p.thumbnail_url,b.*,u.name
 , (SELECT COUNT(*) FROM reply WhERE post_idx = p.idx) AS reply_cnt
-    FROM ( post p INNER JOIN board b ON b.idx = p.board_idx)
+    FROM ( (SELECT * FROM post ORDER BY create_time DESC LIMIT 3) p INNER JOIN board b ON b.idx = p.board_idx)
     INNER JOIN user u ON u.idx = p.user_idx
-    WHERE p.create_time >= CURDATE() 
     GROUP BY p.idx ORDER BY p.like_cnt DESC`;
+    //WHERE p.create_time >= CURDATE() 
+
     let getTodayHotPostResult = await db.queryParam_None(getTodayHotPostQuery);
     //쿼리문의 결과가 실패이면 null을 반환한다
     if (!getTodayHotPostResult) { //쿼리문이 실패했을 때
@@ -461,11 +462,10 @@ router.get('/todaynew', async (req, res) => {
 date_format(p.create_time,'%Y-%m-%d %h:%i') AS 'create_time', date_format(p.update_time,'%Y-%m-%d %h:%i') AS 'update_time',
 p.view_cnt,p.like_cnt,p.hate_cnt,p.is_anonymous,p.image_cnt,p.video_cnt,p.thumbnail_url,b.*,u.name
 , (SELECT COUNT(*) FROM reply WhERE post_idx = p.idx) AS reply_cnt
-    FROM ( post p INNER JOIN board b ON b.idx = p.board_idx)
+    FROM ( (SELECT * FROM post ORDER BY create_time DESC LIMIT 3) p INNER JOIN board b ON b.idx = p.board_idx)
     INNER JOIN user u ON u.idx = p.user_idx
-    WHERE p.create_time >= CURDATE() 
-    ORDER BY p.create_time DESC
-    LIMIT 3`;
+    ORDER BY p.create_time DESC`;
+    // WHERE p.create_time >= CURDATE() 
     let getTodayHotPostResult = await db.queryParam_None(getTodayHotPostQuery);
     //쿼리문의 결과가 실패이면 null을 반환한다
     if (!getTodayHotPostResult) { //쿼리문이 실패했을 때
