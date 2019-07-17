@@ -249,7 +249,7 @@ router.get('/:categoryIdx/subscribe/allrank', async (req, res) => {
 
     let upDown;
     for (var i = 0; i < result.length; i++) {
-        upDown = result[i].last_category_subs_rank - result[i].ranking;
+        upDown = result[i].last_category_subs_rank - result[i].cur_category_subs_rank;
         result[i]['upDown'] = upDown;
     }
 
@@ -279,7 +279,7 @@ router.get('/:categoryIdx/subscribe/hotrank', async (req, res) => {
 
     let upDown;
     for (var i = 0; i < result.length; i++) {
-        upDown = result[i].last_category_subs_rank - result[i].ranking;
+        upDown = result[i].last_category_subs_rank - result[i].cur_category_subs_rank;
         result[i]['upDown'] = upDown;
     }
 
@@ -308,7 +308,7 @@ router.get('/:categoryIdx/view/allrank', async (req, res) => {
 
     let upDown;
     for (var i = 0; i < result.length; i++) {
-        upDown = result[i].last_category_view_rank - result[i].ranking;
+        upDown = result[i].last_category_view_rank - result[i].current_category_view_rank;
         result[i]['upDown'] = upDown;
     }
 
@@ -337,7 +337,7 @@ router.get('/:categoryIdx/view/hotrank', async (req, res) => {
 
     let upDown;
     for (var i = 0; i < result.length; i++) {
-        upDown = result[i].last_category_view_rank - result[i].ranking;
+        upDown = result[i].last_category_view_rank - result[i].cur_category_view_rank;
         result[i]['upDown'] = upDown;
     }
 
