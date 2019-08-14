@@ -234,14 +234,14 @@ router.get('/all/view/hotrank', async (req, res) => {
 router.get('/:categoryIdx/subscribe/allrank', async (req, res) => {
     const { categoryIdx } = req.params;
 
-    const getCategoryIdxQuery = `SELECT cr.last_category_subs_rank, cr.cur_category_subs_rank, c.idx, 
-    ROW_NUMBER() OVER( ORDER BY c.youtube_subscriber_cnt DESC ) AS ranking,
+    const getCategoryIdxQuery = `SELECT cr.last_category_subs_rank, cr.current_category_subs_rank, c.idx, 
+    ROW_NUMBER() OVER( ORDER BY cr.current_category_subs_rank  asc ) AS ranking,
     c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
     FROM creator c
     INNER JOIN creator_category cc ON cc.creator_idx = c.idx
     INNER JOIN category ccc ON ccc.idx = cc.category_idx
     INNER JOIN follower_grade fg ON fg.idx = c.follower_grade_idx
-    INNER JOIN creator_dayhot_rank cr ON c.idx = cr.creator_idx
+    INNER JOIN creator_rank cr ON c.idx = cr.creator_idx
     WHERE ccc.idx = '${categoryIdx}'
     ORDER BY c.youtube_subscriber_cnt DESC LIMIT 50`;
     const getCreatorCategoryResult = await db.queryParam_None(getCategoryIdxQuery);
@@ -266,7 +266,7 @@ router.get('/:categoryIdx/subscribe/hotrank', async (req, res) => {
     const { categoryIdx } = req.params;
     const getCategoryIdxQuery = `SELECT cr.last_category_subs_rank, cr.cur_category_subs_rank, c.idx,
     ROW_NUMBER() OVER( ORDER BY cr.cur_category_subs_rank  asc ) AS ranking,
-        c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
+        c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt-c.last_subscriber_cnt AS youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
         FROM creator c
         INNER JOIN creator_category cc ON cc.creator_idx = c.idx
         INNER JOIN category ccc ON ccc.idx = cc.category_idx
@@ -324,7 +324,7 @@ router.get('/:categoryIdx/view/hotrank', async (req, res) => {
     const { categoryIdx } = req.params;
     const getCategoryIdxQuery = `SELECT cr.last_category_view_rank, cr.cur_category_view_rank, c.idx,
     RANK() OVER( ORDER BY cr.cur_category_view_rank  asc ) AS ranking,
-        c.profile_url, c.name AS creatorName, c.youtube_view_cnt, vg.img_url, ccc.name AS categoryName
+        c.profile_url, c.name AS creatorName, c.youtube_view_cnt - c.last_view_cnt AS youtube_view_cnt, vg.img_url, ccc.name AS categoryName
         FROM creator c
         INNER JOIN creator_category cc ON cc.creator_idx = c.idx
         INNER JOIN category ccc ON ccc.idx = cc.category_idx
