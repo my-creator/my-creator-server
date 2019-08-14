@@ -231,11 +231,9 @@ cron.schedule('0 3 0 * * *', () => {
         .then(rows => {
             rows.forEach(row => {
                 let rank = 1;
-                let thisDiff = row.youtube_subscriber_cnt - row.last_subscriber_cnt;
                 rows.forEach(row2 => {
                     if (row.category_idx === row2.category_idx) {
-                        let tempDiff = row2.youtube_subscriber_cnt - row2.last_subscriber_cnt;
-                        if (tempDiff > thisDiff) {
+                        if (row2.youtube_subscriber_cnt > row.youtube_subscriber_cnt) {
                             rank++;
                         }
                     }
@@ -262,11 +260,9 @@ cron.schedule('0 3 0 * * *', () => {
         .then(rows => {
             rows.forEach(row => {
                 let rank = 1;
-                let thisDiff = row.youtube_view_cnt - row.last_view_cnt;
                 rows.forEach(row2 => {
                     if (row.category_idx === row2.category_idx) {
-                        let tempDiff = row2.youtube_view_cnt - row2.last_view_cnt;
-                        if (tempDiff > thisDiff) {
+                        if (row2.youtube_view_cnt > row.youtube_view_cnt) {
                             rank++;
                         }
                     }
