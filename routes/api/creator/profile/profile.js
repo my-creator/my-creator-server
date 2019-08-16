@@ -10,6 +10,8 @@ const authUtil = require('../../../../module/utils/authUtils');
 const moment = require('moment');
 const jwtUtil = require('../../../../module/utils/jwt');
 
+const fs = require('fs');
+const csvtojson = require('csvtojson');
 
 
 
@@ -23,7 +25,247 @@ const jwtUtil = require('../../../../module/utils/jwt');
 //카테고리 먹방 2위!!
 
 
-//search_tim});
+router.get('/video/crawl', async(req, res) => {
+
+
+    let resultData;
+    try {
+
+        let getPostByHotQuery= `SELECT channel_id FROM crecre.creator ORDER BY youtube_subscriber_cnt DESC`;  
+
+    const getPostByHotResult = await db.queryParam_None(getPostByHotQuery);
+
+
+
+    if (!getPostByHotResult) {
+        console.log("popular webtoon file save error");
+    } else {
+
+
+        const ans = JSON.parse(JSON.stringify(getPostByHotResult[0]));
+        const ansss = [];
+
+        console.log(ans[0].channel_id);
+
+//        console.log(getPostByHotResult[0][0].channel_id);
+        for(var i = 0;i<ans.length;i++){
+            ansss[i] = ans[i].channel_id;
+
+        }
+
+
+        try {
+            fs.writeFileSync('channelCsv.csv', JSON.stringify(ansss), 'UTF-8');
+        } catch (resultError) {
+            console.log(resultError);
+        }
+    }
+
+
+
+        resultData = JSON.parse(fs.readFileSync('channelCsv.csv', 'UTF-8'));
+     
+        res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.POST_SELECT_SUCCESS,resultData));
+    } catch (readFileSysError) {
+        res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.POST_SELECT_ERROR));
+    }
+
+});
+
+
+router.post('/video/crawlHotinput', async(req, res) => {
+//6열
+     var data = fs.readFileSync('hotoutput.csv', 'utf8');
+    var dataArray = data.split("\n"); //Be careful if you are in a \r\n world... 
+    // Your array contains ['ID', 'D11', ... ] 
+
+//for문
+    for(var i = 0;i<dataArray.length;i++){
+        strArray = dataArray[i].split(',');
+
+        console.log("strArray");
+        console.log(strArray);
+        console.log("dataArray");
+        console.log(dataArray[i]);
+        let getChannel_id = strArray[0] || null;
+        let getTitle  = strArray[1] || null;
+        let getVideoLink = strArray[2] || null;
+        let getTime = strArray[3] || null;
+        let getViewCnt = strArray[4] || null;
+        let getThumbnailImg  = strArray[5] || null;
+
+        console.log("aass");
+        console.log(getChannel_id);
+        console.log(getTitle);
+        console.log(getVideoLink);
+        console.log(getTime);
+        console.log(getViewCnt);
+        console.log(getThumbnailImg);
+
+
+        if(!getChannel_id || !getTitle || !getVideoLink){
+            continue;
+        }else{
+            const getCreatorIdxQuery= `SELECT idx FROM creator where channel_id=?`;  
+
+            var getCreatorIdxResult  = await db.queryParam_Parse(getCreatorIdxQuery,[strArray[0]]);
+            console.log("getchannelId");
+            
+            
+
+            
+        //hotcsv파일            
+
+            if(!getCreatorIdxResult || getCreatorIdxResult.length == 0){
+                console.log("creator_idx");
+                console.log(getCreatorIdxResult);
+            }else{
+                var creator_idx = JSON.parse(JSON.stringify(getCreatorIdxResult[0][0])).idx;
+                console.log(creator_idx);//4659
+                const params = [creator_idx,getTitle,getVideoLink,getViewCnt,getThumbnailImg,getTime];
+                const insertCreatorHotVideoQuery = "INSERT INTO video(creator_idx, title, video_url, view_cnt, thumbnail_url, create_time,if_hot,if_new)\
+                VALUES(?,?,?,?,?,?,1,0)";
+                var insertCreatorHotVideoResult = await db.queryParam_Parse(insertCreatorHotVideoQuery, params);
+
+
+                console.log(insertCreatorHotVideoResult);
+            }
+
+
+            
+
+
+
+        }
+
+        
+        }
+
+        if (!insertCreatorHotVideoResult) {
+                console.log("543");
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_PROFILE_ERROR));
+            } else if( insertCreatorHotVideoResult[0].length === 0){
+                console.log("2352");
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_PROFILE_NOTHING));
+            }
+            else{
+                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_SELECT_PROFILE_SUCCESS));
+            }
+
+        //    for 반복문
+
+         //channel_id
+        
+
+
+
+
+});
+
+
+
+
+router.post('/video/crawlNewinput', async(req, res) => {
+//6열
+     var data = fs.readFileSync('newoutput.csv', 'utf8');
+    var dataArray = data.split("\n"); //Be careful if you are in a \r\n world... 
+    // Your array contains ['ID', 'D11', ... ] 
+
+//for문
+    for(var i = 0;i<dataArray.length;i++){
+        strArray = dataArray[i].split(',');
+
+        console.log("strArray");
+        console.log(strArray);
+        console.log("dataArray");
+        console.log(dataArray[i]);
+        let getChannel_id = strArray[0] || null;
+        let getTitle  = strArray[1] || null;
+        let getVideoLink = strArray[2] || null;
+        let getTime = strArray[3] || null;
+        let getViewCnt = strArray[4] || null;
+        let getThumbnailImg  = strArray[5] || null;
+
+        console.log("aass");
+        console.log(getChannel_id);
+        console.log(getTitle);
+        console.log(getVideoLink);
+        console.log(getTime);
+        console.log(getViewCnt);
+        console.log(getThumbnailImg);
+
+
+        if(!getChannel_id || !getTitle || !getVideoLink){
+            continue;
+        }else{
+            const getCreatorIdxQuery= `SELECT idx FROM creator where channel_id=?`;  
+
+            var getCreatorIdxResult  = await db.queryParam_Parse(getCreatorIdxQuery,[strArray[0]]);
+            console.log("getchannelId");
+            
+            
+
+            
+        //hotcsv파일            
+
+            if(!getCreatorIdxResult || getCreatorIdxResult.length == 0){
+                console.log("creator_idx");
+                console.log(getCreatorIdxResult);
+            }else{
+                var creator_idx = JSON.parse(JSON.stringify(getCreatorIdxResult[0][0])).idx;
+                console.log(creator_idx);//4659
+                const params = [creator_idx,getTitle,getVideoLink,getViewCnt,getThumbnailImg,getTime];
+                const insertCreatorNewVideoQuery = "INSERT INTO video(creator_idx, title, video_url, view_cnt, thumbnail_url, create_time,if_hot,if_new)\
+                VALUES(?,?,?,?,?,?,0,1)";
+                var insertCreatorNewVideoResult = await db.queryParam_Parse(insertCreatorNewVideoQuery, params);
+
+
+                console.log(insertCreatorNewVideoResult);
+            }
+
+
+            
+
+
+
+        }
+
+        
+        }
+
+        if (!insertCreatorNewVideoResult) {
+                console.log("543");
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_PROFILE_ERROR));
+            } else if( insertCreatorNewVideoResult[0].length === 0){
+                console.log("2352");
+                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_PROFILE_NOTHING));
+            }
+            else{
+                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_SELECT_PROFILE_SUCCESS));
+            }
+
+        //    for 반복문
+
+         //channel_id
+        
+
+
+
+
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 router.get('/:creatorIdx', async (req, res) => {
     const { creatorIdx } = req.params;
