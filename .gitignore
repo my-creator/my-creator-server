@@ -72,9 +72,9 @@ config/
 ./channelCsv.csv
 
 #csv file
-./*.csv
+*.csv
 
 #crawlfinal.py
-./crawlFinal.py
-./*.txt
+crawlFinal.py
+*.txt
 
