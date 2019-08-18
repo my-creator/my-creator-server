@@ -718,7 +718,7 @@ router.delete('/:postIdx/unhate', authUtil.isLoggedin,  async(req, res) => {
             else{
             //update
 
-                let putPostUnlikeQuery  = "UPDATE post SET like_cnt = like_cnt - 1 WHERE idx = ?";
+                let putPostUnlikeQuery  = "UPDATE post SET hate_cnt = hate_cnt - 1 WHERE idx = ?";
                 const putPostUnlikeResult = await db.queryParam_Parse(putPostUnlikeQuery, [postIdx]);
 
                 if(!putPostUnlikeResult){
