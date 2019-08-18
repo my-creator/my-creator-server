@@ -11,8 +11,8 @@ const moment = require('moment');
 const jwtUtil = require('../../../../module/utils/jwt');
 
 const fs = require('fs');
-const csvtojson = require('csvtojson');
 
+const csv = require('csv-parser');
 
 
 //4. 크리에이터 프로필 조회 okdk
@@ -75,8 +75,8 @@ router.get('/video/crawl', async(req, res) => {
 
 router.post('/video/crawlHotinput', async(req, res) => {
 //6열
-     var data = fs.readFileSync('hotoutput.csv', 'utf8');
-    var dataArray = data.split("\n"); //Be careful if you are in a \r\n world... 
+      var dataArray= fs.readFileSync('hotoutput.csv', 'utf8').toString().split("\n");
+    //var dataArray = data.split("\n"); //Be careful if you are in a \r\n world... 
     // Your array contains ['ID', 'D11', ... ] 
 
 //for문
@@ -94,13 +94,6 @@ router.post('/video/crawlHotinput', async(req, res) => {
         let getViewCnt = strArray[4] || null;
         let getThumbnailImg  = strArray[5] || null;
 
-        console.log("aass");
-        console.log(getChannel_id);
-        console.log(getTitle);
-        console.log(getVideoLink);
-        console.log(getTime);
-        console.log(getViewCnt);
-        console.log(getThumbnailImg);
 
 
         if(!getChannel_id || !getTitle || !getVideoLink){
@@ -125,38 +118,20 @@ router.post('/video/crawlHotinput', async(req, res) => {
                 const params = [creator_idx,getTitle,getVideoLink,getViewCnt,getThumbnailImg,getTime];
                 const insertCreatorHotVideoQuery = "INSERT INTO video(creator_idx, title, video_url, view_cnt, thumbnail_url, create_time,if_hot,if_new)\
                 VALUES(?,?,?,?,?,?,1,0)";
-                var insertCreatorHotVideoResult = await db.queryParam_Parse(insertCreatorHotVideoQuery, params);
-
-
-                console.log(insertCreatorHotVideoResult);
+                var insertCreatorHotVideoResult = db.queryParam_Parse(insertCreatorHotVideoQuery, params)
+                 .then((result,reject)=>{
+                    console.log('then');
+                    console.log(result);
+                })
+                .catch(err=>{
+                    console.log(err);
+                });
             }
-
-            
-
-
 
         }
 
         
         }
-
-        if (!insertCreatorHotVideoResult) {
-                console.log("543");
-                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_PROFILE_ERROR));
-            } else if( insertCreatorHotVideoResult[0].length === 0){
-                console.log("2352");
-                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_PROFILE_NOTHING));
-            }
-            else{
-                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_SELECT_PROFILE_SUCCESS));
-            }
-
-        //    for 반복문
-
-         //channel_id
-        
-
-
 
 
 });
@@ -166,10 +141,9 @@ router.post('/video/crawlHotinput', async(req, res) => {
 
 router.post('/video/crawlNewinput', async(req, res) => {
 //6열
-     var data = fs.readFileSync('newoutput.csv', 'utf8');
-    var dataArray = data.split("\n"); //Be careful if you are in a \r\n world... 
+    var dataArray= fs.readFileSync('newoutput.csv', 'utf8').toString().split("\n");
+    //var dataArray = data.split("\n"); //Be careful if you are in a \r\n world... 
     // Your array contains ['ID', 'D11', ... ] 
-
 //for문
     for(var i = 0;i<dataArray.length;i++){
         strArray = dataArray[i].split(',');
@@ -184,15 +158,6 @@ router.post('/video/crawlNewinput', async(req, res) => {
         let getTime = strArray[3] || null;
         let getViewCnt = strArray[4] || null;
         let getThumbnailImg  = strArray[5] || null;
-
-        console.log("aass");
-        console.log(getChannel_id);
-        console.log(getTitle);
-        console.log(getVideoLink);
-        console.log(getTime);
-        console.log(getViewCnt);
-        console.log(getThumbnailImg);
-
 
         if(!getChannel_id || !getTitle || !getVideoLink){
             continue;
@@ -216,40 +181,20 @@ router.post('/video/crawlNewinput', async(req, res) => {
                 const params = [creator_idx,getTitle,getVideoLink,getViewCnt,getThumbnailImg,getTime];
                 const insertCreatorNewVideoQuery = "INSERT INTO video(creator_idx, title, video_url, view_cnt, thumbnail_url, create_time,if_hot,if_new)\
                 VALUES(?,?,?,?,?,?,0,1)";
-                var insertCreatorNewVideoResult = await db.queryParam_Parse(insertCreatorNewVideoQuery, params);
+                var insertCreatorNewVideoResult = db.queryParam_Parse(insertCreatorNewVideoQuery, params)
+                 .then((result,reject)=>{
+                    console.log('then');
+                    console.log(result);
+                })
+                .catch(err=>{
+                    console.log(err);
+                });
 
-
-                console.log(insertCreatorNewVideoResult);
             }
-
-
-            
-
-
-
         }
 
         
         }
-
-        if (!insertCreatorNewVideoResult) {
-                console.log("543");
-                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_PROFILE_ERROR));
-            } else if( insertCreatorNewVideoResult[0].length === 0){
-                console.log("2352");
-                res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_SELECT_PROFILE_NOTHING));
-            }
-            else{
-                res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_SELECT_PROFILE_SUCCESS));
-            }
-
-        //    for 반복문
-
-         //channel_id
-        
-
-
-
 
 });
 

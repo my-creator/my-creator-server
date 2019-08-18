@@ -88,8 +88,8 @@ router.get('/:creatorIdx/popularvideo/three', async (req, res) => {
     const getPopularVideoQuery = `SELECT v.*, c.channel_id 
                             FROM video v 
                             INNER JOIN creator c ON v.creator_idx = c.idx 
-                            WHERE c.idx = '${creatorIdx}'
-                            ORDER BY v.view_cnt DESC LIMIT 3`;
+                            WHERE c.idx = '${creatorIdx}' AND v.if_hot = 1
+                            LIMIT 3`;
     const getPopularVideoResult = await db.queryParam_Parse(getPopularVideoQuery, [creatorIdx]);
 
     if (!getPopularVideoResult) {
@@ -105,11 +105,11 @@ router.get('/:creatorIdx/popularvideo/three', async (req, res) => {
 router.get('/:creatorIdx/newvideo/three', async (req, res) => {
     const { creatorIdx } = req.params;
 
-    const getNewVideoQuery = `SELECT v.*, c.channel_id 
+    const getNewVideoQuery =  `SELECT v.*, c.channel_id 
                             FROM video v 
                             INNER JOIN creator c ON v.creator_idx = c.idx 
-                            WHERE c.idx = '${creatorIdx}'
-                            ORDER BY v.create_time DESC LIMIT 3`;
+                            WHERE c.idx = '${creatorIdx}' AND v.if_new = 1
+                            LIMIT 3`;
     const getNewVideoResult = await db.queryParam_Parse(getNewVideoQuery, [creatorIdx]);
 
     if (!getNewVideoResult) {

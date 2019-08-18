@@ -37,7 +37,7 @@ def new_crawl(channel_id):
 
                     if 'watch' in t['href'] and new_cnt < 5:
                         newLink = "https://www.youtube.com"+t['href']
-                        newTitle = t.text.replace('\n'," ")
+                        newTitle = t.text.replace('\n'," ").replace(','," ")
                         
                         newtmp = [channel_id,newTitle,newLink,newTime,newViewCnt,""]
                         new.append(newtmp)
@@ -111,7 +111,7 @@ def hot_crawl(channel_id):
 
                     if 'watch' in t['href'] and hot_cnt < 5:
                         hotLink = "https://www.youtube.com"+t['href']
-                        hotTitle = t.text.replace('\n'," ")
+                        hotTitle = t.text.replace('\n'," ").replace(','," ")
                         
                         hottmp = [channel_id,hotTitle,hotLink,hotTime,hotViewCnt,""]
                         hot.append(hottmp)
@@ -178,6 +178,8 @@ def crawl_final():
     
     #for k in range(len(data):
             for k in range(len(data)):
+                print("k")
+                print(k)
             
 #                result = crawl_final(data[k])
                 result_hot = hot_crawl(data[k])
