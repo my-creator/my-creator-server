@@ -12,43 +12,7 @@ def new_crawl(channel_id):
     soup = BeautifulSoup(html_doc,'html.parser')
     new_cnt = 0
     new_img_cnt = 0
-    #print("new")
-    #print(newSoup)
 
-    '''
-    <div class="yt-lockup-content">
-<h3 class="yt-lockup-title"><a aria-describedby="description-id-411364" class="yt-uix-sessionlink yt-uix-tile-link spf-link yt-ui-ellipsis yt-ui-ellipsis-2" data-sessionlink="ei=4dtYXdLTEIiu4QLMr7SQCw&amp;feature=c4-videos-u" dir="ltr" href="/watch?v=DIc-jArbbIM" rel="nofollow" title="야발!!!!!!!!!! 어떤 자식이야!!!! 대.폭.망 다 접어💀｜러스트 3일차 #3">야발!!!!!!!!!! 어떤 자식이야!!!! 대.폭.망 다 접어💀｜러스트 3일차 #3</a><span class="accessible-description" id="description-id-411364"> - 길이: 29분</span></h3>
-<div class="yt-lockup-meta">
-
-    #print(soup)
-
-    for l in soup.find_all('div',{"class":"clearfix branded-page-gutter-padding appbar-content-trigger"}):
-            a = l.select('li:nth-child(2) a')
-            #print("a")
-            #print(a[0])
-            href = a[0]['href']
-            #print("href")
-            #print(href)
-            #https://www.youtube.com/user/d7297ut/videos
-            #https://www.youtube.com/user/d7297ut/videos?view=0&sort=p&flow=grid
-            #업로드한동영상 최신순 https://www.youtube.com/channel/UCeXDmNuOug_VmHY88sZkVSA/videos?view=0&sort=dd&flow=grid
-            #업로드한 동영상 인기순 https://www.youtube.com/channel/UCeXDmNuOug_VmHY88sZkVSA/videos?view=0&sort=p&flow=grid
-            hotVideoPath =  'https://www.youtube.com' + href+"?view=0&sort=p&flow=grid"
-            break
-
-    html_doc = requests.get(hotVideoPath).text
-    hotSoup = BeautifulSoup(html_doc,'html.parser')
-    print("new")
-    print(newSoup)
-
-    
-    <div class="yt-lockup-content">
-<h3 class="yt-lockup-title"><a aria-describedby="description-id-411364" class="yt-uix-sessionlink yt-uix-tile-link spf-link yt-ui-ellipsis yt-ui-ellipsis-2" data-sessionlink="ei=4dtYXdLTEIiu4QLMr7SQCw&amp;feature=c4-videos-u" dir="ltr" href="/watch?v=DIc-jArbbIM" rel="nofollow" title="야발!!!!!!!!!! 어떤 자식이야!!!! 대.폭.망 다 접어💀｜러스트 3일차 #3">야발!!!!!!!!!! 어떤 자식이야!!!! 대.폭.망 다 접어💀｜러스트 3일차 #3</a><span class="accessible-description" id="description-id-411364"> - 길이: 29분</span></h3>
-<div class="yt-lockup-meta">
-
-
-
-    '''
 
     for l in soup.find_all('div',{"class":"yt-lockup-content"}):
                 newTime = ''
@@ -234,4 +198,3 @@ def crawl_final():
    
 
 crawl_final()
-#new_crawl2('UCYooECrv-fIXlPaDwEIaveA')
