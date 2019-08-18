@@ -131,7 +131,6 @@ router.post('/video/crawlHotinput', async(req, res) => {
                 console.log(insertCreatorHotVideoResult);
             }
 
-
             
 
 
