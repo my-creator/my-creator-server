@@ -2,6 +2,9 @@ const cron = require('node-cron');
 const request = require('request');
 const db = require('../module/utils/pool');
 
+const fs = require('fs');
+const csv = require('csv-parser');
+
 
 // 매일 24시에 NewVideo 크롤링 csv 파일 읽고,  Insert 
 
