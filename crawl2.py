@@ -3,6 +3,9 @@ from bs4 import BeautifulSoup
 import csv
 import requests
 
+import schedule
+import time
+ 
 
 
 def new_crawl(channel_id):
@@ -199,4 +202,8 @@ def crawl_final():
             
    
 
-crawl_final()
+#crawl_final()
+
+
+#매일 10시에 크롤링 CSV 만들기
+schedule.every().day.at("22:00").do(crawl_final)
