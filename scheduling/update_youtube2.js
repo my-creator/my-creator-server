@@ -111,23 +111,26 @@ cron.schedule('0 3 0 * * *', () => {
 
 // 카테고리-일간-구독자  creator_dayhot_rank     last_category_subs_rank cur_category_subs_rank
 cron.schedule('0 3 0 * * *', () => {
-    const selectCreatorQuery = "SELECT idx, youtube_subscriber_cnt, last_subscriber_cnt FROM creator c;";
+    const selectCreatorQuery = 
+    `SELECT idx, youtube_subscriber_cnt, last_subscriber_cnt, category_idx
+    FROM creator c INNER JOIN creator_category ON c.idx = creator_category.creator_idx;`;
     const selectCreatorsResult = db.queryParam_None(selectCreatorQuery)
         .then(result => {
             return result[0];
         })
         .then(rows => {
-            let update_query = ``;
             rows.forEach(row => {
                 let rank = 1;
                 let thisDiff = row.youtube_subscriber_cnt - row.last_subscriber_cnt;
                 rows.forEach(row2 => {
-                    let tempDiff = row2.youtube_subscriber_cnt - row2.last_subscriber_cnt;
-                    if(tempDiff > thisDiff){
-                        rank++;
+                    if (row.category_idx === row2.category_idx) {
+                        let tempDiff = row2.youtube_subscriber_cnt - row2.last_subscriber_cnt;
+                        if (tempDiff > thisDiff) {
+                            rank++;
+                        }
                     }
                 });
-                update_query = `UPDATE creator_dayhot_rank SET cur_category_subs_rank = ${rank} WHERE creator_idx = ${row.idx}; `;
+                const update_query = `UPDATE creator_dayhot_rank SET cur_category_subs_rank = ${rank} WHERE creator_idx = ${row.idx}; `;
                 const updateLastResult = db.queryParam_None(update_query);
             });
             // console.log(update_query);
@@ -140,23 +143,25 @@ cron.schedule('0 3 0 * * *', () => {
 
 // 카테고리-일간-조회수  creator_dayhot_rank     last_category_view_rank cur_category_view_rank
 cron.schedule('0 3 0 * * *', () => {
-    const selectCreatorQuery = "SELECT idx, youtube_view_cnt, last_view_cnt FROM creator c;";
+    const selectCreatorQuery = `SELECT idx, youtube_view_cnt, last_view_cnt, category_idx
+    FROM creator c INNER JOIN creator_category ON c.idx = creator_category.creator_idx;`;
     const selectCreatorsResult = db.queryParam_None(selectCreatorQuery)
         .then(result => {
             return result[0];
         })
         .then(rows => {
-            let update_query = ``;
             rows.forEach(row => {
                 let rank = 1;
                 let thisDiff = row.youtube_view_cnt - row.last_view_cnt;
                 rows.forEach(row2 => {
-                    let tempDiff = row2.youtube_view_cnt - row2.last_view_cnt;
-                    if(tempDiff > thisDiff){
-                        rank++;
+                    if (row.category_idx === row2.category_idx) {
+                        let tempDiff = row2.youtube_view_cnt - row2.last_view_cnt;
+                        if (tempDiff > thisDiff) {
+                            rank++;
+                        }
                     }
                 });
-                update_query = `UPDATE creator_dayhot_rank SET cur_category_view_rank = ${rank} WHERE creator_idx = ${row.idx}; `;
+                const update_query = `UPDATE creator_dayhot_rank SET cur_category_view_rank = ${rank} WHERE creator_idx = ${row.idx}; `;
                 const updateLastResult = db.queryParam_None(update_query);
             });
             // console.log(update_query);
@@ -217,23 +222,23 @@ cron.schedule('0 3 0 * * *', () => {
 
 // 카테고리-전체-구독자 creator_rank last_category_subs_rank current_category_subs_rank
 cron.schedule('0 3 0 * * *', () => {
-    const selectCreatorQuery = "SELECT idx, youtube_subscriber_cnt, last_subscriber_cnt FROM creator c;";
+    const selectCreatorQuery = `SELECT idx, youtube_subscriber_cnt, last_subscriber_cnt, category_idx
+    FROM creator c INNER JOIN creator_category ON c.idx = creator_category.creator_idx;`;
     const selectCreatorsResult = db.queryParam_None(selectCreatorQuery)
         .then(result => {
             return result[0];
         })
         .then(rows => {
-            let update_query = ``;
             rows.forEach(row => {
                 let rank = 1;
-                let thisDiff = row.youtube_subscriber_cnt - row.last_subscriber_cnt;
                 rows.forEach(row2 => {
-                    let tempDiff = row2.youtube_subscriber_cnt - row2.last_subscriber_cnt;
-                    if(tempDiff > thisDiff){
-                        rank++;
+                    if (row.category_idx === row2.category_idx) {
+                        if (row2.youtube_subscriber_cnt > row.youtube_subscriber_cnt) {
+                            rank++;
+                        }
                     }
                 });
-                update_query = `UPDATE creator_rank SET current_category_subs_rank = ${rank} WHERE creator_idx = ${row.idx}; `;
+                const update_query = `UPDATE creator_rank SET current_category_subs_rank = ${rank} WHERE creator_idx = ${row.idx}; `;
                 const updateLastResult = db.queryParam_None(update_query);
             });
             // console.log(update_query);
@@ -246,23 +251,23 @@ cron.schedule('0 3 0 * * *', () => {
 
 // 카테고리-전체-조회수  creator_rank테이블 last_category_view_rank current_category_view_rank
 cron.schedule('0 3 0 * * *', () => {
-    const selectCreatorQuery = "SELECT idx, youtube_view_cnt, last_view_cnt FROM creator c;";
+    const selectCreatorQuery = `SELECT idx, youtube_view_cnt, last_view_cnt, category_idx
+    FROM creator c INNER JOIN creator_category ON c.idx = creator_category.creator_idx;`;
     const selectCreatorsResult = db.queryParam_None(selectCreatorQuery)
         .then(result => {
             return result[0];
         })
         .then(rows => {
-            let update_query = ``;
             rows.forEach(row => {
                 let rank = 1;
-                let thisDiff = row.youtube_view_cnt - row.last_view_cnt;
                 rows.forEach(row2 => {
-                    let tempDiff = row2.youtube_view_cnt - row2.last_view_cnt;
-                    if(tempDiff > thisDiff){
-                        rank++;
+                    if (row.category_idx === row2.category_idx) {
+                        if (row2.youtube_view_cnt > row.youtube_view_cnt) {
+                            rank++;
+                        }
                     }
                 });
-                update_query = `UPDATE creator_rank SET current_category_view_rank = ${rank} WHERE creator_idx = ${row.idx}; `;
+                const update_query = `UPDATE creator_rank SET current_category_view_rank = ${rank} WHERE creator_idx = ${row.idx}; `;
                 const updateLastResult = db.queryParam_None(update_query);
             });
             // console.log(update_query);
