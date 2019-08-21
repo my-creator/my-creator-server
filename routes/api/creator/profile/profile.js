@@ -116,8 +116,8 @@ router.post('/video/crawlHotinput', async(req, res) => {
                 var creator_idx = JSON.parse(JSON.stringify(getCreatorIdxResult[0][0])).idx;
                 console.log(creator_idx);//4659
                 const params = [creator_idx,getTitle,getVideoLink,getViewCnt,getThumbnailImg,getTime];
-                const insertCreatorHotVideoQuery = "INSERT INTO video(creator_idx, title, video_url, view_cnt, thumbnail_url, create_time,if_hot,if_new)\
-                VALUES(?,?,?,?,?,?,1,0)";
+                const insertCreatorHotVideoQuery = "INSERT INTO video(creator_idx, title, video_url, view_cnt, thumbnail_url, create_time,if_hot,if_new,insert_time)\
+                VALUES(?,?,?,?,?,?,1,0, now())";
                 var insertCreatorHotVideoResult = db.queryParam_Parse(insertCreatorHotVideoQuery, params)
                  .then((result,reject)=>{
                     console.log('then');
@@ -179,8 +179,8 @@ router.post('/video/crawlNewinput', async(req, res) => {
                 var creator_idx = JSON.parse(JSON.stringify(getCreatorIdxResult[0][0])).idx;
                 console.log(creator_idx);//4659
                 const params = [creator_idx,getTitle,getVideoLink,getViewCnt,getThumbnailImg,getTime];
-                const insertCreatorNewVideoQuery = "INSERT INTO video(creator_idx, title, video_url, view_cnt, thumbnail_url, create_time,if_hot,if_new)\
-                VALUES(?,?,?,?,?,?,0,1)";
+                const insertCreatorNewVideoQuery = "INSERT INTO video(creator_idx, title, video_url, view_cnt, thumbnail_url, create_time,if_hot,if_new,insert_time)\
+                VALUES(?,?,?,?,?,?,0,1,now())";
                 var insertCreatorNewVideoResult = db.queryParam_Parse(insertCreatorNewVideoQuery, params)
                  .then((result,reject)=>{
                     console.log('then');
