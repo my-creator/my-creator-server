@@ -69,10 +69,7 @@ config/
 ./youtub_link.json
 
 #creator_channelId
-./channelCsv.csv
 
-#csv file
-*.csv
 
 #crawlfinal.py
 crawlFinal.py
