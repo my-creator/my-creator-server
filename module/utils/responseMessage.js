@@ -172,5 +172,17 @@ module.exports = {
     VOTE_LAST_SELECT_SUCCESS: "지난 투표 조회 성공",
     VOTE_SUGGEST_ERROR: "투표 제안 에러",
     VOTE_SUGGEST_SUCCESS: "투표 제안 성공",
-    CREATOR_SELECT_PROFILE_NOTHING:"크리에이터 프로필이 존재하지 않습니다."
+    CREATOR_SELECT_PROFILE_NOTHING:"크리에이터 프로필이 존재하지 않습니다.",
+
+    USER_MYPAGE_SELECT_SUCCESS : "마이페이지 조회 성공",
+    USER_MYPAGE_SELECT_ERROR : "마이페이지 조회 에러",
+    
+    USER_PROFILE_UPDATE_SUCCESS : "회원 프로필 수정 성공",
+    USER_PROFILE_UPDATE_ERROR : "회원 프로필 수정 에러",
+    USER_NICKNAME_UPDATE_SUCCESS : "회원 닉네임 수정 성공",
+    USER_NICKNAME_UPDATE_ERROR: "회원 닉네임 수정 에러",
+    USER_NiCKNAME_DUPLICATE : "이미 사용중인 닉네임입니다",
+    USER_PASSWORD_NOT_CORRECT : "사용자 비밀번호가 틀립니다",
+    USER_PASSWORD_UPDATE_SUCCESS : "사용자 비밀번호 수정 성공",
+    USER_PASSWORD_UPDATE_ERROR : "사용자 비밀번호 수정 에러"
 };
