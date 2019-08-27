@@ -438,10 +438,13 @@ router.get('/todayhot', async (req, res) => {
     let getTodayHotPostQuery  = `SELECT p.idx AS 'post_idx', p.board_idx,p.user_idx,p.title,p.contents,
 date_format(p.create_time,'%Y-%m-%d %h:%i') AS 'create_time', date_format(p.update_time,'%Y-%m-%d %h:%i') AS 'update_time',
 p.view_cnt,p.like_cnt,p.hate_cnt,p.is_anonymous,p.image_cnt,p.video_cnt,p.thumbnail_url,b.*,u.name
+, (SELECT COUNT(*) FROM reply WhERE post_idx = p.idx) AS reply_cnt
     FROM ( post p INNER JOIN board b ON b.idx = p.board_idx)
     INNER JOIN user u ON u.idx = p.user_idx
-    WHERE p.create_time >= CURDATE() 
-    GROUP BY p.idx ORDER BY p.like_cnt DESC`;
+    GROUP BY p.idx ORDER BY p.like_cnt DESC
+    LIMIT 3`;
+    //WHERE p.create_time >= CURDATE() 
+
     let getTodayHotPostResult = await db.queryParam_None(getTodayHotPostQuery);
     //쿼리문의 결과가 실패이면 null을 반환한다
     if (!getTodayHotPostResult) { //쿼리문이 실패했을 때
@@ -459,10 +462,12 @@ router.get('/todaynew', async (req, res) => {
     let getTodayHotPostQuery  = `SELECT p.idx AS 'post_idx', p.board_idx,p.user_idx,p.title,p.contents,
 date_format(p.create_time,'%Y-%m-%d %h:%i') AS 'create_time', date_format(p.update_time,'%Y-%m-%d %h:%i') AS 'update_time',
 p.view_cnt,p.like_cnt,p.hate_cnt,p.is_anonymous,p.image_cnt,p.video_cnt,p.thumbnail_url,b.*,u.name
+, (SELECT COUNT(*) FROM reply WhERE post_idx = p.idx) AS reply_cnt
     FROM ( post p INNER JOIN board b ON b.idx = p.board_idx)
     INNER JOIN user u ON u.idx = p.user_idx
-    WHERE p.create_time >= CURDATE() 
-    GROUP BY p.idx ORDER BY p.create_time DESC`;
+    ORDER BY p.create_time DESC
+    LIMIT 3`;
+    // WHERE p.create_time >= CURDATE() 
     let getTodayHotPostResult = await db.queryParam_None(getTodayHotPostQuery);
     //쿼리문의 결과가 실패이면 null을 반환한다
     if (!getTodayHotPostResult) { //쿼리문이 실패했을 때
@@ -713,7 +718,7 @@ router.delete('/:postIdx/unhate', authUtil.isLoggedin,  async(req, res) => {
             else{
             //update
 
-                let putPostUnlikeQuery  = "UPDATE post SET like_cnt = like_cnt - 1 WHERE idx = ?";
+                let putPostUnlikeQuery  = "UPDATE post SET hate_cnt = hate_cnt - 1 WHERE idx = ?";
                 const putPostUnlikeResult = await db.queryParam_Parse(putPostUnlikeQuery, [postIdx]);
 
                 if(!putPostUnlikeResult){
@@ -801,7 +806,7 @@ router.post('/', authUtil.isLoggedin, upload.array('imgs'), async (req, res) => 
 
     console.log(boardIdx,title,contents,is_anonymous,video_cnt,image_cnt,thumbnail_url,userIdx);
     //게시글 db에 제목,내용 넣기
-    let postPostQuery = "INSERT INTO post(board_idx, user_idx, title, contents,create_time,is_anonymous,image_cnt,video_cnt,thumbnail_url) VALUES(?,?, ?, ?,now(),?,?,?,?)";
+    let postPostQuery = "INSERT INTO post(board_idx, user_idx, title, contents,is_anonymous,image_cnt,video_cnt,thumbnail_url) VALUES(?,?, ?, ?,?,?,?,?)";
     let postPostResult  = await db.queryParam_Parse(postPostQuery, [boardIdx,userIdx,title,contents,is_anonymous,image_cnt,video_cnt,thumbnail_url]);
 
     console.log('#########');

@@ -88,8 +88,8 @@ router.get('/:creatorIdx/popularvideo/three', async (req, res) => {
     const getPopularVideoQuery = `SELECT v.*, c.channel_id 
                             FROM video v 
                             INNER JOIN creator c ON v.creator_idx = c.idx 
-                            WHERE c.idx = '${creatorIdx}'
-                            ORDER BY v.view_cnt DESC LIMIT 3`;
+                            WHERE c.idx = '${creatorIdx}' AND v.if_hot = 1
+                            LIMIT 3`;
     const getPopularVideoResult = await db.queryParam_Parse(getPopularVideoQuery, [creatorIdx]);
 
     if (!getPopularVideoResult) {
@@ -105,11 +105,11 @@ router.get('/:creatorIdx/popularvideo/three', async (req, res) => {
 router.get('/:creatorIdx/newvideo/three', async (req, res) => {
     const { creatorIdx } = req.params;
 
-    const getNewVideoQuery = `SELECT v.*, c.channel_id 
+    const getNewVideoQuery =  `SELECT v.*, c.channel_id 
                             FROM video v 
                             INNER JOIN creator c ON v.creator_idx = c.idx 
-                            WHERE c.idx = '${creatorIdx}'
-                            ORDER BY v.create_time DESC LIMIT 3`;
+                            WHERE c.idx = '${creatorIdx}' AND v.if_new = 1
+                            LIMIT 3`;
     const getNewVideoResult = await db.queryParam_Parse(getNewVideoQuery, [creatorIdx]);
 
     if (!getNewVideoResult) {
@@ -178,6 +178,7 @@ router.get('/all/subscribe/hotrank', async (req, res) => {
     }
 });
 
+
 //3. 전체 크리에이터 중 전체 조회수 랭킹
 router.get('/all/view/allrank', async (req, res) => {
     const getCategoryIdxQuery = `SELECT cr.last_all_view_rank, cr.current_all_view_rank AS ranking, c.idx,
@@ -234,22 +235,22 @@ router.get('/all/view/hotrank', async (req, res) => {
 router.get('/:categoryIdx/subscribe/allrank', async (req, res) => {
     const { categoryIdx } = req.params;
 
-    const getCategoryIdxQuery = `SELECT cr.last_category_subs_rank, cr.cur_category_subs_rank, c.idx, 
-    ROW_NUMBER() OVER( ORDER BY cr.cur_category_subs_rank  asc ) AS ranking,
+    const getCategoryIdxQuery = `SELECT cr.last_category_subs_rank, cr.current_category_subs_rank, c.idx, 
+    ROW_NUMBER() OVER( ORDER BY cr.current_category_subs_rank  asc ) AS ranking,
     c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
     FROM creator c
     INNER JOIN creator_category cc ON cc.creator_idx = c.idx
     INNER JOIN category ccc ON ccc.idx = cc.category_idx
     INNER JOIN follower_grade fg ON fg.idx = c.follower_grade_idx
-    INNER JOIN creator_dayhot_rank cr ON c.idx = cr.creator_idx
+    INNER JOIN creator_rank cr ON c.idx = cr.creator_idx
     WHERE ccc.idx = '${categoryIdx}'
-    ORDER BY ranking asc LIMIT 50`;
+    ORDER BY c.youtube_subscriber_cnt DESC LIMIT 50`;
     const getCreatorCategoryResult = await db.queryParam_None(getCategoryIdxQuery);
     const result = getCreatorCategoryResult[0];
 
     let upDown;
     for (var i = 0; i < result.length; i++) {
-        upDown = result[i].last_category_subs_rank - result[i].ranking;
+        upDown = result[i].last_category_subs_rank - result[i].cur_category_subs_rank;
         result[i]['upDown'] = upDown;
     }
 
@@ -261,26 +262,60 @@ router.get('/:categoryIdx/subscribe/allrank', async (req, res) => {
 });
 
 
+// //6. 카테고리별 크리에이터 중 일간핫 구독자수 랭킹
+// router.get('/:categoryIdx/subscribe/hotrank', async (req, res) => {
+//     const { categoryIdx } = req.params;
+//     const getCategoryIdxQuery = `SELECT cr.last_category_subs_rank, cr.cur_category_subs_rank, c.idx,
+//     ROW_NUMBER() OVER( ORDER BY cr.cur_category_subs_rank  asc ) AS ranking,
+//         c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt-c.last_subscriber_cnt AS youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
+//         FROM creator c
+//         INNER JOIN creator_category cc ON cc.creator_idx = c.idx
+//         INNER JOIN category ccc ON ccc.idx = cc.category_idx
+//         INNER JOIN follower_grade fg ON fg.idx = c.follower_grade_idx
+//         INNER JOIN creator_dayhot_rank cr ON c.idx = cr.creator_idx
+//         WHERE ccc.idx = '${categoryIdx}'
+//         ORDER BY ranking ASC LIMIT 50`;
+//     const getCreatorCategoryResult = await db.queryParam_None(getCategoryIdxQuery);
+//     const result = getCreatorCategoryResult[0];
+
+//     let upDown;
+//     for (var i = 0; i < result.length; i++) {
+//         upDown = result[i].last_category_subs_rank - result[i].cur_category_subs_rank;
+//         result[i]['upDown'] = upDown;
+//     }
+
+//     if (!getCreatorCategoryResult) {
+//         res.status(200).send(defaultRes.successFalse(statusCode.INTERNAL_SERVER_ERROR, resMessage.CREATOR_CATEGORY_DAYHOTSUBSCRIBE_SELECT_ERROR));
+//     } else {
+//         res.status(200).send(defaultRes.successTrue(statusCode.OK, resMessage.CREATOR_CATEGORY_DAYHOTSUBSCRIBE_SELECT_SUCCESS, getCreatorCategoryResult[0]));
+//     }
+// });
+
 //6. 카테고리별 크리에이터 중 일간핫 구독자수 랭킹
 router.get('/:categoryIdx/subscribe/hotrank', async (req, res) => {
     const { categoryIdx } = req.params;
     const getCategoryIdxQuery = `SELECT cr.last_category_subs_rank, cr.cur_category_subs_rank, c.idx,
     ROW_NUMBER() OVER( ORDER BY cr.cur_category_subs_rank  asc ) AS ranking,
-        c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
+        c.profile_url, c.name AS creatorName, c.youtube_subscriber_cnt-c.last_subscriber_cnt AS youtube_subscriber_cnt, fg.img_url, ccc.name AS categoryName
         FROM creator c
         INNER JOIN creator_category cc ON cc.creator_idx = c.idx
         INNER JOIN category ccc ON ccc.idx = cc.category_idx
         INNER JOIN follower_grade fg ON fg.idx = c.follower_grade_idx
         INNER JOIN creator_dayhot_rank cr ON c.idx = cr.creator_idx
         WHERE ccc.idx = '${categoryIdx}'
-        ORDER BY ranking ASC LIMIT 50`;
+        ASC LIMIT 50`;
     const getCreatorCategoryResult = await db.queryParam_None(getCategoryIdxQuery);
     const result = getCreatorCategoryResult[0];
 
     let upDown;
     for (var i = 0; i < result.length; i++) {
-        upDown = result[i].last_category_subs_rank - result[i].ranking;
+        upDown = result[i].last_category_subs_rank - result[i].cur_category_subs_rank;
         result[i]['upDown'] = upDown;
+    }
+
+    const result2 = getCreatorCategoryResult;
+    for (var i = 0; i < result2.length; i++) {
+        console.log(result2[i]);
     }
 
     if (!getCreatorCategoryResult) {
@@ -294,7 +329,7 @@ router.get('/:categoryIdx/subscribe/hotrank', async (req, res) => {
 router.get('/:categoryIdx/view/allrank', async (req, res) => {
     const { categoryIdx } = req.params;
     const getCategoryIdxQuery = `SELECT cr.last_category_view_rank, cr.current_category_view_rank, c.idx,
-    ROW_NUMBER() OVER( ORDER BY cr.current_category_view_rank  asc ) AS ranking,
+    ROW_NUMBER() OVER( ORDER BY c.youtube_view_cnt DESC) AS ranking,
         c.profile_url, c.name AS creatorName, c.youtube_view_cnt, vg.img_url, ccc.name AS categoryName
         FROM creator c
         INNER JOIN creator_category cc ON cc.creator_idx = c.idx
@@ -302,13 +337,13 @@ router.get('/:categoryIdx/view/allrank', async (req, res) => {
         INNER JOIN view_grade vg ON vg.idx = c.view_grade_idx
         INNER JOIN creator_rank cr ON c.idx = cr.creator_idx
         WHERE ccc.idx = '${categoryIdx}'
-        ORDER BY ranking ASC LIMIT 50`;
+        ORDER BY c.youtube_view_cnt DESC LIMIT 50`;
     const getCreatorCategoryResult = await db.queryParam_None(getCategoryIdxQuery);
     const result = getCreatorCategoryResult[0];
 
     let upDown;
     for (var i = 0; i < result.length; i++) {
-        upDown = result[i].last_category_view_rank - result[i].ranking;
+        upDown = result[i].last_category_view_rank - result[i].current_category_view_rank;
         result[i]['upDown'] = upDown;
     }
 
@@ -324,7 +359,7 @@ router.get('/:categoryIdx/view/hotrank', async (req, res) => {
     const { categoryIdx } = req.params;
     const getCategoryIdxQuery = `SELECT cr.last_category_view_rank, cr.cur_category_view_rank, c.idx,
     RANK() OVER( ORDER BY cr.cur_category_view_rank  asc ) AS ranking,
-        c.profile_url, c.name AS creatorName, c.youtube_view_cnt, vg.img_url, ccc.name AS categoryName
+        c.profile_url, c.name AS creatorName, c.youtube_view_cnt - c.last_view_cnt AS youtube_view_cnt, vg.img_url, ccc.name AS categoryName
         FROM creator c
         INNER JOIN creator_category cc ON cc.creator_idx = c.idx
         INNER JOIN category ccc ON ccc.idx = cc.category_idx
@@ -337,7 +372,7 @@ router.get('/:categoryIdx/view/hotrank', async (req, res) => {
 
     let upDown;
     for (var i = 0; i < result.length; i++) {
-        upDown = result[i].last_category_view_rank - result[i].ranking;
+        upDown = result[i].last_category_view_rank - result[i].cur_category_view_rank;
         result[i]['upDown'] = upDown;
     }
 

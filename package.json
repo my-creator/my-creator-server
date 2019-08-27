@@ -10,6 +10,7 @@
     "aws-sdk": "^2.485.0",
     "cookie-parser": "~1.4.3",
     "crypto": "^1.0.1",
+    "csv-parser": "^2.3.0",
     "debug": "~2.6.9",
     "express": "^4.16.4",
     "fs": "0.0.1-security",
